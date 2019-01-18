@@ -1,0 +1,9 @@
+<RCC>
+    <qresource prefix="/">
+        <file>icons/icon_tomato_red.ico</file>
+        <file>icons/icon_tomato_black.ico</file>
+        <file>icons/icon_tomato_green.ico</file>
+        <file>icons/icon_tomato_blue.ico</file>
+        <file>icons/stop.svg</file>
+    </qresource>
+</RCC>
