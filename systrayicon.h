@@ -4,6 +4,8 @@
 #include <QObject>
 #include <QSystemTrayIcon>
 
+class QStateMachine;
+class QState;
 class QTimer;
 class QAction;
 
@@ -19,26 +21,36 @@ public:
         IDLE = 0,
         WORK,
         SHORT_BREAK,
-        BIG_BREAK
+        LONG_BREAK
     };
+signals:
+    void timeout();
 
 private slots:
+    /*
     void onWork();
     void onStop();
     void onShortBreak();
-    void onBigBreak();
+    void onLongBreak();
+    */
     void onTimerTimeout();
     void onResetCount();
     void onAbout();
+
+    void onIdleStateEntered();
+    void onWorkStateEntered();
+    void onShortBreakStateEntered();
+    void onLongBreakStateEntered();
+    void onWorkStateExited();
 
     void onNotImplementedYet();
 
 private:
     int workTimeInSeconds;
     int shortBreakInSeconds;
-    int bigBreakInSeconds;
+    int longBreakInSeconds;
     Period currentPeriod;
-    int current;
+    int currentTimeInSeconds;
 
     int pomodoros;
 
@@ -48,12 +60,19 @@ private:
     QAction *workAction;
     QAction *stopAction;
     QAction *shortBreakAction;
-    QAction *bigBreakAction;
+    QAction *longBreakAction;
     QAction *timerAction;
     QAction *pomodoroCountAction;
     QAction *resetPomodorosAction;
     QAction *aboutAction;
     QAction *preferencesAction;
+
+    QStateMachine *machine;
+    QState *idleState;
+    QState *workState;
+    QState *shortBreakState;
+    QState *longBreakState;
+    QState *currentState;
 };
 
 #endif // SYSTRAYICON_H
