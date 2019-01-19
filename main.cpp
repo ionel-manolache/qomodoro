@@ -9,5 +9,6 @@ int main(int argc, char *argv[])
     SysTrayIcon icon;
     icon.show();
 
+    app.setQuitOnLastWindowClosed(false);
     return app.exec();
 }

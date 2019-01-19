@@ -55,7 +55,7 @@ SysTrayIcon::SysTrayIcon()
 
     connect(resetPomodorosAction, &QAction::triggered, this, &SysTrayIcon::onResetCount);
     connect(aboutAction, &QAction::triggered, this, &SysTrayIcon::onAbout);
-    connect(preferencesAction, &QAction::triggered, this, &SysTrayIcon::onNotImplementedYet);
+    connect(preferencesAction, &QAction::triggered, this, &SysTrayIcon::onPreferences);
 
     timerAction->setEnabled(false);
     pomodoroCountAction->setEnabled(false);
@@ -179,9 +179,10 @@ void SysTrayIcon::onResetCount()
 void SysTrayIcon::onAbout()
 {
     QMessageBox::about(nullptr, "About qmodoro", "qmodoro is a pomodoro-style timebox timer app, aimed for productivity.");
+    qDebug() << "Did I reach here?";
 }
 
-void SysTrayIcon::onNotImplementedYet()
+void SysTrayIcon::onPreferences()
 {
     QMessageBox::information(nullptr, "Not implemented", "Feature not implmemented yet, but it's planned");
 }
@@ -189,7 +190,6 @@ void SysTrayIcon::onNotImplementedYet()
 void SysTrayIcon::onTimerTimeout()
 {
     if (machine->configuration().size() == 0) {
-        qDebug() << "How come machine has no state???? WTH?";
         return;
     }
 
@@ -204,12 +204,14 @@ void SysTrayIcon::onTimerTimeout()
     else if (state == longBreakState)
         timeInSeconds = longBreakInSeconds;
 
-    if (currentTimeInSeconds >= timeInSeconds) {
-        emit timeout();
-    } else {
-        const int timeRemaining = timeInSeconds - currentTimeInSeconds;
-        const int minutes = timeRemaining / 60;
-        const int seconds = timeRemaining % 60;
-        timerAction->setText(QStringLiteral("%1:%2").arg(minutes).arg(seconds));
+    if (timeInSeconds > 0) {
+        if (currentTimeInSeconds >= timeInSeconds) {
+            emit timeout();
+        } else {
+            const int timeRemaining = timeInSeconds - currentTimeInSeconds;
+            const int minutes = timeRemaining / 60;
+            const int seconds = timeRemaining % 60;
+            timerAction->setText(QStringLiteral("%1:%2").arg(minutes).arg(seconds));
+        }
     }
 }

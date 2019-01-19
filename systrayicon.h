@@ -27,23 +27,16 @@ signals:
     void timeout();
 
 private slots:
-    /*
-    void onWork();
-    void onStop();
-    void onShortBreak();
-    void onLongBreak();
-    */
+    void onAbout();
     void onTimerTimeout();
     void onResetCount();
-    void onAbout();
+    void onPreferences();
 
     void onIdleStateEntered();
     void onWorkStateEntered();
     void onShortBreakStateEntered();
     void onLongBreakStateEntered();
     void onWorkStateExited();
-
-    void onNotImplementedYet();
 
 private:
     int workTimeInSeconds;
