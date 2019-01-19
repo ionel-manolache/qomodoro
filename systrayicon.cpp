@@ -7,25 +7,40 @@
 #include <QMessageBox>
 #include <QStateMachine>
 
+#include <QSettings>
+
+#include "preferencesdialog.h"
+
 #include <QDebug>
 
 
-#define TEST
+static const QString shortBreakString = QStringLiteral("shortBreakTime");
+static const QString longBreakString = QStringLiteral("longBreakTime");
+static const QString workString = QStringLiteral("workTime");
+static const QString autoStartString = QStringLiteral("autoStartTimer");
+static const QString soundOnTimerStartString = QStringLiteral("soundOnTimerStart");
+static const QString soundOnTimerEndString = QStringLiteral("soundOnTimerEnd");
+static const QString notificationOnTimerEndString = QStringLiteral("notificationOnTimerEnd");
+static const QString tickTockDuringWorkString = QStringLiteral("tickTockDuringWork");
+static const QString tickTockDuringBreakString = QStringLiteral("tickTockDuringBreak");
 
-#ifdef TEST
-#define DEFAULT_WORK_IN_SECONDS 10
-#define DEFAULT_BREAK_IN_SECONDS 5
-#define DEFAULT_BIG_BREAK_IN_SECONDS 15
-#else
-#define DEFAULT_WORK_IN_SECONDS 25 * 60
-#define DEFAULT_BREAK_IN_SECONDS 5 * 60
-#define DEFAULT_BIG_BREAK_IN_SECONDS 30 * 60
-#endif
+static const QString timeString = QStringLiteral("%1:%2");
+
+
+#define DEFAULT_WORK 25
+#define DEFAULT_BREAK 5
+#define DEFAULT_BIG_BREAK 30
+
+static QString getTimeString(int minutes, int seconds)
+{
+    return timeString.arg(minutes, 2, 10, QChar('0'))
+                     .arg(seconds, 2, 10, QChar('0'));
+}
 
 SysTrayIcon::SysTrayIcon()
-    : workTimeInSeconds(DEFAULT_WORK_IN_SECONDS)
-    , shortBreakInSeconds(DEFAULT_BREAK_IN_SECONDS)
-    , longBreakInSeconds(DEFAULT_BIG_BREAK_IN_SECONDS)
+    : workTimeInSeconds(0)
+    , shortBreakInSeconds(0)
+    , longBreakInSeconds(0)
     , currentTimeInSeconds(0)
     , pomodoros(0)
     , trayIcon(new QSystemTrayIcon(this))
@@ -35,27 +50,38 @@ SysTrayIcon::SysTrayIcon()
     , workState(new QState())
     , shortBreakState(new QState())
     , longBreakState(new QState())
+    , prefDialog(new PreferencesDialog)
 {
+    settings = new QSettings("com.qomodoro", "qomodoro");
+
+    workTimeInSeconds = settings->value(workString, DEFAULT_WORK).toInt() * 60;
+    shortBreakInSeconds = settings->value(shortBreakString, DEFAULT_BREAK).toInt() * 60;
+    longBreakInSeconds = settings->value(longBreakString, DEFAULT_BIG_BREAK).toInt() * 60;
+
     connect(timer, &QTimer::timeout, this, &SysTrayIcon::onTimerTimeout);
 
-    trayIcon->setIcon(QIcon(":/icons/icon_tomato_black.ico"));
+    idleIcon = QIcon(":/icons/icon_tomato_black.ico");
+    trayIcon->setIcon(idleIcon);
 
     QMenu *contextMenu = new QMenu();
-    QAction *quit = new QAction("Quit", this);
+    QAction *quit = new QAction(tr("Quit"), this);
+    quit->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q));
 
-    workAction = new QAction(QIcon(":/icons/icon_tomato_red.ico"), "Pomodoro", this);
-    stopAction = new QAction(QIcon(":/icons/stop.svg"), "Stop", this);
-    shortBreakAction = new QAction(QIcon(":/icons/icon_tomato_green.ico"), "Short break", this);
-    longBreakAction = new QAction(QIcon(":/icons/icon_tomato_blue.ico"), "Long break", this);
-    timerAction = new QAction(QIcon(":/icons/clock.svg"), "00:00", this);
-    pomodoroCountAction = new QAction("No Pomodoros", this);
-    resetPomodorosAction = new QAction("Reset count", this);
-    aboutAction = new QAction("About qmodoro", this);
-    preferencesAction = new QAction("Preferences...", this);
+    workAction = new QAction(QIcon(":/icons/icon_tomato_red.ico"), tr("Pomodoro"), this);
+    stopAction = new QAction(QIcon(":/icons/stop.svg"), tr("Stop"), this);
+    shortBreakAction = new QAction(QIcon(":/icons/icon_tomato_green.ico"), tr("Short break"), this);
+    longBreakAction = new QAction(QIcon(":/icons/icon_tomato_blue.ico"), tr("Long break"), this);
+    timerAction = new QAction(QIcon(":/icons/clock.svg"), getTimeString(0, 0), this);
+    pomodoroCountAction = new QAction(tr("No Pomodoros"), this);
+    resetPomodorosAction = new QAction(tr("Reset count"), this);
+    aboutAction = new QAction(tr("About qmodoro"), this);
+    preferencesAction = new QAction(tr("Preferences..."), this);
 
     connect(resetPomodorosAction, &QAction::triggered, this, &SysTrayIcon::onResetCount);
     connect(aboutAction, &QAction::triggered, this, &SysTrayIcon::onAbout);
     connect(preferencesAction, &QAction::triggered, this, &SysTrayIcon::onPreferences);
+
+    connect(prefDialog, &PreferencesDialog::accepted, this, &SysTrayIcon::onPreferencesSaved);
 
     timerAction->setEnabled(false);
     pomodoroCountAction->setEnabled(false);
@@ -125,66 +151,98 @@ void SysTrayIcon::show()
 
 void SysTrayIcon::onIdleStateEntered()
 {
-    qDebug() << machine->configuration();
-    trayIcon->setIcon(QIcon(":/icons/icon_tomato_black.ico"));
+    trayIcon->setIcon(idleIcon);
     currentTimeInSeconds = 0;
     timer->stop();
-    timerAction->setText(QStringLiteral("00:00"));
     stopAction->setEnabled(false);
+
+    timerAction->setText(getTimeString(0, 0));
 }
 
 void SysTrayIcon::onWorkStateEntered()
 {
-    qDebug() << machine->configuration();
-    trayIcon->setIcon(workAction->icon());
-    currentTimeInSeconds = 0;
-    timer->start(1000);
-    stopAction->setEnabled(true);
+    stateChanged(workAction->icon());
 }
 
 void SysTrayIcon::onShortBreakStateEntered()
 {
-    qDebug() << machine->configuration();
-    trayIcon->setIcon(shortBreakAction->icon());
-    currentTimeInSeconds = 0;
-    timer->start(1000);
-    stopAction->setEnabled(true);
+    stateChanged(shortBreakAction->icon());
 }
 
 void SysTrayIcon::onLongBreakStateEntered()
 {
-    qDebug() << machine->configuration();
-    trayIcon->setIcon(longBreakAction->icon());
-    currentTimeInSeconds = 0;
-    timer->start(1000);
-    stopAction->setEnabled(true);
+    stateChanged(longBreakAction->icon());
 }
 
 void SysTrayIcon::onWorkStateExited()
 {
     if (currentTimeInSeconds >= workTimeInSeconds) {
         ++pomodoros;
-        pomodoroCountAction->setText(QString("%1 pomodoros").arg(pomodoros));
+        pomodoroCountAction->setText(tr("%1 pomodoros").arg(pomodoros));
         resetPomodorosAction->setEnabled(true);
     }
 }
 
+void SysTrayIcon::loadSettings()
+{
+    prefDialog->setShortBreakTime(settings->value(shortBreakString, DEFAULT_BREAK).toInt());
+    prefDialog->setLongBreakTime(settings->value(longBreakString, DEFAULT_WORK).toInt());
+    prefDialog->setWorkTime(settings->value(workString, DEFAULT_BIG_BREAK).toInt());
+    prefDialog->setStartTimerAutomatically(settings->value(autoStartString, false).toBool());
+    prefDialog->setSoundOnTimerStart(settings->value(soundOnTimerStartString, true).toBool());
+    prefDialog->setSoundOnTimerEnd(settings->value(soundOnTimerEndString, true).toBool());
+    prefDialog->setNotificationOnTimerEnd(settings->value(notificationOnTimerEndString, false).toBool());
+    prefDialog->setTickTockDuringWork(settings->value(tickTockDuringWorkString, false).toBool());
+    prefDialog->setTickTockDuringBreak(settings->value(tickTockDuringBreakString, false).toBool());
+}
+
+void SysTrayIcon::saveSettings()
+{
+    settings->setValue(shortBreakString, prefDialog->shortBreakTime());
+    settings->setValue(longBreakString, prefDialog->longBreakTime());
+    settings->setValue(workString, prefDialog->workTime());
+    settings->setValue(autoStartString, prefDialog->startTimerAutomatically());
+    settings->setValue(soundOnTimerStartString, prefDialog->soundOnTimerStart());
+    settings->setValue(soundOnTimerEndString, prefDialog->soundOnTimerEnd());
+    settings->setValue(notificationOnTimerEndString, prefDialog->notificationOnTimerEnd());
+    settings->setValue(tickTockDuringWorkString, prefDialog->tickTockDuringWork());
+    settings->setValue(tickTockDuringBreakString, prefDialog->tickTockDuringBreak());
+}
+
+void SysTrayIcon::stateChanged(QIcon icon)
+{
+    trayIcon->setIcon(icon);
+    currentTimeInSeconds = 0;
+    timer->start(1000);
+    stopAction->setEnabled(true);
+}
+
 void SysTrayIcon::onResetCount()
 {
-    pomodoroCountAction->setText("No Pomodoros");
+    pomodoroCountAction->setText(tr("No Pomodoros"));
     pomodoros = 0;
     resetPomodorosAction->setEnabled(false);
 }
 
 void SysTrayIcon::onAbout()
 {
-    QMessageBox::about(nullptr, "About qmodoro", "qmodoro is a pomodoro-style timebox timer app, aimed for productivity.");
-    qDebug() << "Did I reach here?";
+    QMessageBox::about(nullptr, tr("About %1").arg(qApp->applicationName())
+                       , tr("%1 is a pomodoro-style timebox timer app, aimed for productivity.")
+                       .arg(qApp->applicationName()));
 }
 
 void SysTrayIcon::onPreferences()
 {
-    QMessageBox::information(nullptr, "Not implemented", "Feature not implmemented yet, but it's planned");
+    loadSettings();
+    prefDialog->show();
+}
+
+void SysTrayIcon::onPreferencesSaved()
+{
+    saveSettings();
+    workTimeInSeconds = settings->value(workString, DEFAULT_WORK).toInt() * 60;
+    shortBreakInSeconds = settings->value(shortBreakString, DEFAULT_BREAK).toInt() * 60;
+    longBreakInSeconds = settings->value(longBreakString, DEFAULT_BIG_BREAK).toInt() * 60;
 }
 
 void SysTrayIcon::onTimerTimeout()
@@ -211,7 +269,7 @@ void SysTrayIcon::onTimerTimeout()
             const int timeRemaining = timeInSeconds - currentTimeInSeconds;
             const int minutes = timeRemaining / 60;
             const int seconds = timeRemaining % 60;
-            timerAction->setText(QStringLiteral("%1:%2").arg(minutes).arg(seconds));
+            timerAction->setText(getTimeString(minutes, seconds));
         }
     }
 }

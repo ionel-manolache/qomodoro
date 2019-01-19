@@ -8,6 +8,8 @@ class QStateMachine;
 class QState;
 class QTimer;
 class QAction;
+class QSettings;
+class PreferencesDialog;
 
 class SysTrayIcon : public QObject
 {
@@ -31,12 +33,19 @@ private slots:
     void onTimerTimeout();
     void onResetCount();
     void onPreferences();
+    void onPreferencesSaved();
 
     void onIdleStateEntered();
     void onWorkStateEntered();
     void onShortBreakStateEntered();
     void onLongBreakStateEntered();
     void onWorkStateExited();
+
+private:
+    void loadSettings();
+    void saveSettings();
+
+    void stateChanged(QIcon icon);
 
 private:
     int workTimeInSeconds;
@@ -66,6 +75,12 @@ private:
     QState *shortBreakState;
     QState *longBreakState;
     QState *currentState;
+
+    PreferencesDialog *prefDialog;
+
+    QSettings *settings;
+
+    QIcon idleIcon;
 };
 
 #endif // SYSTRAYICON_H

@@ -11,12 +11,15 @@ CONFIG += c++11
 
 SOURCES += \
         main.cpp \
-        systrayicon.cpp
+        systrayicon.cpp \
+    preferencesdialog.cpp
 
 HEADERS += \
-        systrayicon.h
+        systrayicon.h \
+    preferencesdialog.h
 
 FORMS += \
+    preferencesdialog.ui
 
 
 qnx: target.path = /tmp/$${TARGET}/bin
