@@ -7,6 +7,8 @@ namespace Ui {
 class PreferencesDialog;
 }
 
+class QSettings;
+
 class PreferencesDialog : public QDialog
 {
     Q_OBJECT
@@ -15,30 +17,22 @@ public:
     explicit PreferencesDialog(QWidget *parent = 0);
     ~PreferencesDialog();
 
-    int shortBreakTime();
-    void setShortBreakTime(int shortBreak);
-    int longBreakTime();
-    void setLongBreakTime(int longBreak);
-    int workTime();
-    void setWorkTime(int work);
+    void setSettings(QSettings *settings);
+    QSettings* settings();
 
-    bool startTimerAutomatically();
-    void setStartTimerAutomatically(bool on);
+    void loadSettings();
 
-    bool soundOnTimerStart();
-    void setSoundOnTimerStart(bool on);
-    bool soundOnTimerEnd();
-    void setSoundOnTimerEnd(bool on);
-    bool notificationOnTimerEnd();
-    void setNotificationOnTimerEnd(bool on);
+private slots:
+    void onAccepted();
 
-    bool tickTockDuringWork();
-    void setTickTockDuringWork(bool on);
-    bool tickTockDuringBreak();
-    void setTickTockDuringBreak(bool on);
+private:
+    bool getBool(QString key, bool def);
+    int getInt(QString key, int def);
 
 private:
     Ui::PreferencesDialog *ui;
+
+    QSettings *m_settings;
 };
 
 #endif // PREFERENCESDIALOG_H

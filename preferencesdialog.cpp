@@ -1,11 +1,29 @@
 #include "preferencesdialog.h"
 #include "ui_preferencesdialog.h"
 
+#include <QSettings>
+
+static const QString shortBreakString = QStringLiteral("shortBreakTime");
+static const QString longBreakString = QStringLiteral("longBreakTime");
+static const QString workString = QStringLiteral("workTime");
+static const QString autoStartString = QStringLiteral("autoStartTimer");
+static const QString soundOnTimerStartString = QStringLiteral("soundOnTimerStart");
+static const QString soundOnTimerEndString = QStringLiteral("soundOnTimerEnd");
+static const QString notificationOnTimerEndString = QStringLiteral("notificationOnTimerEnd");
+static const QString tickTockDuringWorkString = QStringLiteral("tickTockDuringWork");
+static const QString tickTockDuringBreakString = QStringLiteral("tickTockDuringBreak");
+
+static const int DEFAULT_WORK = 25;
+static const int DEFAULT_BREAK = 5;
+static const int DEFAULT_BIG_BREAK = 30;
+
 PreferencesDialog::PreferencesDialog(QWidget *parent) :
     QDialog(parent),
     ui(new Ui::PreferencesDialog)
 {
     ui->setupUi(this);
+
+    connect(this, &QDialog::accepted, this, &PreferencesDialog::onAccepted);
 }
 
 PreferencesDialog::~PreferencesDialog()
@@ -13,92 +31,48 @@ PreferencesDialog::~PreferencesDialog()
     delete ui;
 }
 
-int PreferencesDialog::shortBreakTime()
+void PreferencesDialog::setSettings(QSettings *settings)
 {
-    return ui->shortBreakSpinBox->value();
+    m_settings = settings;
 }
 
-void PreferencesDialog::setShortBreakTime(int shortBreak)
+QSettings* PreferencesDialog::settings()
 {
-    ui->shortBreakSpinBox->setValue(shortBreak);
+    return m_settings;
 }
 
-int PreferencesDialog::longBreakTime()
+void PreferencesDialog::loadSettings()
 {
-    return ui->longBreakSpinBox->value();
+    ui->shortBreakSpinBox->setValue(getInt(shortBreakString, DEFAULT_BREAK));
+    ui->longBreakSpinBox->setValue(getInt(longBreakString, DEFAULT_BIG_BREAK));
+    ui->workSpinBox->setValue(getInt(workString, DEFAULT_WORK));
+    ui->startTimerAutomaticallyCheckBox->setChecked(getBool(autoStartString, false));
+    ui->playSoundWhenTimerStartsCheckBox->setChecked(getBool(soundOnTimerStartString, true));
+    ui->playSoundWhenTimerEndsCheckBox->setChecked(getBool(soundOnTimerEndString, true));
+    ui->showNotificationsWhenTimerEndsCheckBox->setChecked(getBool(notificationOnTimerEndString, false));
+    ui->playTickTockDuringPomodoroCheckBox->setChecked(getBool(tickTockDuringWorkString, false));
+    ui->playTickTockDuringBreakCheckBox->setChecked(getBool(tickTockDuringBreakString, false));
 }
 
-void PreferencesDialog::setLongBreakTime(int longBreak)
+void PreferencesDialog::onAccepted()
 {
-    ui->longBreakSpinBox->setValue(longBreak);
+    m_settings->setValue(QStringLiteral("shortBreakTime"), ui->shortBreakSpinBox->value());
+    m_settings->setValue(QStringLiteral("longBreakTime"), ui->longBreakSpinBox->value());
+    m_settings->setValue(QStringLiteral("workTime"), ui->workSpinBox->value());
+    m_settings->setValue(QStringLiteral("autoStartTimer"), ui->startTimerAutomaticallyCheckBox->isChecked());
+    m_settings->setValue(QStringLiteral("soundOnTimerStart"), ui->playSoundWhenTimerStartsCheckBox->isChecked());
+    m_settings->setValue(QStringLiteral("soundOnTimerEnd"), ui->playSoundWhenTimerEndsCheckBox->isChecked());
+    m_settings->setValue(QStringLiteral("notificationOnTimerEnd"), ui->showNotificationsWhenTimerEndsCheckBox->isChecked());
+    m_settings->setValue(QStringLiteral("tickTockDuringWork"), ui->playTickTockDuringPomodoroCheckBox->isChecked());
+    m_settings->setValue(QStringLiteral("tickTockDuringBreak"), ui->playTickTockDuringBreakCheckBox->isChecked());
 }
 
-int PreferencesDialog::workTime()
+bool PreferencesDialog::getBool(QString key, bool def)
 {
-    return ui->workSpinBox->value();
+    return m_settings->value(key, def).toBool();
 }
 
-void PreferencesDialog::setWorkTime(int work)
+int PreferencesDialog::getInt(QString key, int def)
 {
-    ui->workSpinBox->setValue(work);
-}
-
-bool PreferencesDialog::startTimerAutomatically()
-{
-    return ui->startTimerAutomaticallyCheckBox->isChecked();
-}
-
-void PreferencesDialog::setStartTimerAutomatically(bool on)
-{
-    ui->startTimerAutomaticallyCheckBox->setChecked(on);
-}
-
-bool PreferencesDialog::soundOnTimerStart()
-{
-    return ui->playSoundWhenTimerStartsCheckBox->isChecked();
-}
-
-void PreferencesDialog::setSoundOnTimerStart(bool on)
-{
-    ui->playSoundWhenTimerStartsCheckBox->setChecked(on);
-}
-
-bool PreferencesDialog::soundOnTimerEnd()
-{
-    return ui->playSoundWhenTimerEndsCheckBox->isChecked();
-}
-
-void PreferencesDialog::setSoundOnTimerEnd(bool on)
-{
-    ui->playSoundWhenTimerEndsCheckBox->setChecked(on);
-}
-
-bool PreferencesDialog::notificationOnTimerEnd()
-{
-    return ui->showNotificationsWhenTimerEndsCheckBox->isChecked();
-}
-
-void PreferencesDialog::setNotificationOnTimerEnd(bool on)
-{
-    ui->showNotificationsWhenTimerEndsCheckBox->setChecked(on);
-}
-
-bool PreferencesDialog::tickTockDuringWork()
-{
-    return ui->playTickTockDuringPomodoroCheckBox->isChecked();
-}
-
-void PreferencesDialog::setTickTockDuringWork(bool on)
-{
-    ui->playTickTockDuringPomodoroCheckBox->setChecked(on);
-}
-
-bool PreferencesDialog::tickTockDuringBreak()
-{
-    return ui->playTickTockDuringBreakCheckBox->isChecked();
-}
-
-void PreferencesDialog::setTickTockDuringBreak(bool on)
-{
-    ui->playTickTockDuringBreakCheckBox->setChecked(on);
+    return m_settings->value(key, def).toInt();
 }

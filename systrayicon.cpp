@@ -81,6 +81,7 @@ SysTrayIcon::SysTrayIcon()
     connect(aboutAction, &QAction::triggered, this, &SysTrayIcon::onAbout);
     connect(preferencesAction, &QAction::triggered, this, &SysTrayIcon::onPreferences);
 
+    prefDialog->setSettings(settings);
     connect(prefDialog, &PreferencesDialog::accepted, this, &SysTrayIcon::onPreferencesSaved);
 
     timerAction->setEnabled(false);
@@ -183,32 +184,6 @@ void SysTrayIcon::onWorkStateExited()
     }
 }
 
-void SysTrayIcon::loadSettings()
-{
-    prefDialog->setShortBreakTime(settings->value(shortBreakString, DEFAULT_BREAK).toInt());
-    prefDialog->setLongBreakTime(settings->value(longBreakString, DEFAULT_WORK).toInt());
-    prefDialog->setWorkTime(settings->value(workString, DEFAULT_BIG_BREAK).toInt());
-    prefDialog->setStartTimerAutomatically(settings->value(autoStartString, false).toBool());
-    prefDialog->setSoundOnTimerStart(settings->value(soundOnTimerStartString, true).toBool());
-    prefDialog->setSoundOnTimerEnd(settings->value(soundOnTimerEndString, true).toBool());
-    prefDialog->setNotificationOnTimerEnd(settings->value(notificationOnTimerEndString, false).toBool());
-    prefDialog->setTickTockDuringWork(settings->value(tickTockDuringWorkString, false).toBool());
-    prefDialog->setTickTockDuringBreak(settings->value(tickTockDuringBreakString, false).toBool());
-}
-
-void SysTrayIcon::saveSettings()
-{
-    settings->setValue(shortBreakString, prefDialog->shortBreakTime());
-    settings->setValue(longBreakString, prefDialog->longBreakTime());
-    settings->setValue(workString, prefDialog->workTime());
-    settings->setValue(autoStartString, prefDialog->startTimerAutomatically());
-    settings->setValue(soundOnTimerStartString, prefDialog->soundOnTimerStart());
-    settings->setValue(soundOnTimerEndString, prefDialog->soundOnTimerEnd());
-    settings->setValue(notificationOnTimerEndString, prefDialog->notificationOnTimerEnd());
-    settings->setValue(tickTockDuringWorkString, prefDialog->tickTockDuringWork());
-    settings->setValue(tickTockDuringBreakString, prefDialog->tickTockDuringBreak());
-}
-
 void SysTrayIcon::stateChanged(QIcon icon)
 {
     trayIcon->setIcon(icon);
@@ -233,13 +208,12 @@ void SysTrayIcon::onAbout()
 
 void SysTrayIcon::onPreferences()
 {
-    loadSettings();
+    prefDialog->loadSettings();
     prefDialog->show();
 }
 
 void SysTrayIcon::onPreferencesSaved()
 {
-    saveSettings();
     workTimeInSeconds = settings->value(workString, DEFAULT_WORK).toInt() * 60;
     shortBreakInSeconds = settings->value(shortBreakString, DEFAULT_BREAK).toInt() * 60;
     longBreakInSeconds = settings->value(longBreakString, DEFAULT_BIG_BREAK).toInt() * 60;
