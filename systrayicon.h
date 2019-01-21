@@ -3,6 +3,7 @@
 
 #include <QObject>
 #include <QSystemTrayIcon>
+#include <QMediaPlayer>
 
 class QStateMachine;
 class QState;
@@ -41,11 +42,17 @@ private slots:
     void onLongBreakStateEntered();
     void onWorkStateExited();
 
+    void onMediaPlayerError(QMediaPlayer::Error error);
+
 private:
     void loadSettings();
     void saveSettings();
 
     void stateChanged(QIcon icon);
+
+    void playTimerStartSound();
+    void playTimerEndSound();
+    void playTickTockSound();
 
 private:
     int workTimeInSeconds;
@@ -81,6 +88,8 @@ private:
     QSettings *settings;
 
     QIcon idleIcon;
+
+    QMediaPlayer *player;
 };
 
 #endif // SYSTRAYICON_H

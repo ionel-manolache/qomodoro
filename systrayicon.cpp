@@ -8,6 +8,9 @@
 #include <QStateMachine>
 
 #include <QSettings>
+#include <QMediaPlayer>
+
+#include <QFile>
 
 #include "preferencesdialog.h"
 
@@ -37,6 +40,7 @@ static QString getTimeString(int minutes, int seconds)
                      .arg(seconds, 2, 10, QChar('0'));
 }
 
+
 SysTrayIcon::SysTrayIcon()
     : workTimeInSeconds(0)
     , shortBreakInSeconds(0)
@@ -53,6 +57,10 @@ SysTrayIcon::SysTrayIcon()
     , prefDialog(new PreferencesDialog)
 {
     settings = new QSettings("com.qomodoro", "qomodoro");
+
+    QMediaPlayer *player = new QMediaPlayer(this);
+    player->setVolume(100);
+    connect(player, QOverload<QMediaPlayer::Error>::of(&QMediaPlayer::error), this, &SysTrayIcon::onMediaPlayerError);
 
     workTimeInSeconds = settings->value(workString, DEFAULT_WORK).toInt() * 60;
     shortBreakInSeconds = settings->value(shortBreakString, DEFAULT_BREAK).toInt() * 60;
@@ -152,6 +160,9 @@ void SysTrayIcon::show()
 
 void SysTrayIcon::onIdleStateEntered()
 {
+    //if (!tickTockSound->isFinished())
+        //tickTockSound->stop();
+
     trayIcon->setIcon(idleIcon);
     currentTimeInSeconds = 0;
     timer->stop();
@@ -160,19 +171,57 @@ void SysTrayIcon::onIdleStateEntered()
     timerAction->setText(getTimeString(0, 0));
 }
 
+void SysTrayIcon::playTimerStartSound()
+{
+    QFile file("/Users/ionelmanolache/git/qomodoro/sounds/timer_start.mp3");
+    qDebug() << file.exists();
+    player->setMedia(QUrl::fromLocalFile("/Users/ionelmanolache/git/qomodoro/sounds/timer_start.mp3"));
+    player->play();
+}
+
+void SysTrayIcon::playTimerEndSound()
+{
+    QFile file("/Users/ionelmanolache/git/qomodoro/sounds/timer_goes_off.mp3");
+    qDebug() << file.exists();
+    player->setMedia(QUrl::fromLocalFile("/Users/ionelmanolache/git/qomodoro/sounds/timer_goes_off.mp3"));
+    player->play();
+}
+
+void SysTrayIcon::playTickTockSound()
+{
+    QFile file("/Users/ionelmanolache/git/qomodoro/sounds/timer_tick.mp3");
+    qDebug() << file.exists();
+    player->setMedia(QUrl::fromLocalFile("/Users/ionelmanolache/git/qomodoro/sounds/timer_tick.mp3"));
+    player->play();
+}
+
 void SysTrayIcon::onWorkStateEntered()
 {
+    if (settings->value(soundOnTimerStartString, false).toBool())
+        playTimerStartSound();
+
     stateChanged(workAction->icon());
+
+    if (settings->value(tickTockDuringWorkString, false).toBool())
+        playTickTockSound();
 }
 
 void SysTrayIcon::onShortBreakStateEntered()
 {
+    if (settings->value(soundOnTimerStartString, false).toBool())
+        playTimerStartSound();
     stateChanged(shortBreakAction->icon());
+    if (settings->value(tickTockDuringBreakString, false).toBool())
+        playTickTockSound();
 }
 
 void SysTrayIcon::onLongBreakStateEntered()
 {
+    if (settings->value(soundOnTimerStartString, false).toBool())
+        playTimerStartSound();
     stateChanged(longBreakAction->icon());
+    if (settings->value(tickTockDuringBreakString, false).toBool())
+        playTickTockSound();
 }
 
 void SysTrayIcon::onWorkStateExited()
@@ -181,6 +230,8 @@ void SysTrayIcon::onWorkStateExited()
         ++pomodoros;
         pomodoroCountAction->setText(tr("%1 pomodoros").arg(pomodoros));
         resetPomodorosAction->setEnabled(true);
+        if (settings->value(soundOnTimerEndString, false).toBool())
+            playTimerEndSound();
     }
 }
 
@@ -190,6 +241,30 @@ void SysTrayIcon::stateChanged(QIcon icon)
     currentTimeInSeconds = 0;
     timer->start(1000);
     stopAction->setEnabled(true);
+}
+
+void SysTrayIcon::onMediaPlayerError(QMediaPlayer::Error error)
+{
+    switch(error) {
+    case QMediaPlayer::NoError:
+        qDebug() << "No error";
+        break;
+    case QMediaPlayer::ResourceError:
+        qDebug() << "Resource Error";
+        break;
+    case QMediaPlayer::FormatError:
+        qDebug() << "Format Error";
+        break;
+    case QMediaPlayer::NetworkError:
+        qDebug() << "Network Error";
+        break;
+    case QMediaPlayer::AccessDeniedError:
+        qDebug() << "AccessDenied Error";
+        break;
+    case QMediaPlayer::ServiceMissingError:
+        qDebug() << "ServiceMissing Error";
+        break;
+    }
 }
 
 void SysTrayIcon::onResetCount()
