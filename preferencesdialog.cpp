@@ -1,7 +1,7 @@
 #include "preferencesdialog.h"
 #include "ui_preferencesdialog.h"
 
-#include <QSettings>
+#include "settings.h"
 
 static const QString shortBreakString = QStringLiteral("shortBreakTime");
 static const QString longBreakString = QStringLiteral("longBreakTime");
@@ -31,48 +31,33 @@ PreferencesDialog::~PreferencesDialog()
     delete ui;
 }
 
-void PreferencesDialog::setSettings(QSettings *settings)
+void PreferencesDialog::setSettings(Settings *settings)
 {
     m_settings = settings;
 }
 
-QSettings* PreferencesDialog::settings()
-{
-    return m_settings;
-}
-
 void PreferencesDialog::loadSettings()
 {
-    ui->shortBreakSpinBox->setValue(getInt(shortBreakString, DEFAULT_BREAK));
-    ui->longBreakSpinBox->setValue(getInt(longBreakString, DEFAULT_BIG_BREAK));
-    ui->workSpinBox->setValue(getInt(workString, DEFAULT_WORK));
-    ui->startTimerAutomaticallyCheckBox->setChecked(getBool(autoStartString, false));
-    ui->playSoundWhenTimerStartsCheckBox->setChecked(getBool(soundOnTimerStartString, true));
-    ui->playSoundWhenTimerEndsCheckBox->setChecked(getBool(soundOnTimerEndString, true));
-    ui->showNotificationsWhenTimerEndsCheckBox->setChecked(getBool(notificationOnTimerEndString, false));
-    ui->playTickTockDuringPomodoroCheckBox->setChecked(getBool(tickTockDuringWorkString, false));
-    ui->playTickTockDuringBreakCheckBox->setChecked(getBool(tickTockDuringBreakString, false));
+    ui->shortBreakSpinBox->setValue(m_settings->shortBreakTime());
+    ui->longBreakSpinBox->setValue(m_settings->longBreakTime());
+    ui->workSpinBox->setValue(m_settings->workTime());
+    ui->startTimerAutomaticallyCheckBox->setChecked(m_settings->autoStartNextTimer());
+    ui->playSoundWhenTimerStartsCheckBox->setChecked(m_settings->soundOnTimerStart());
+    ui->playSoundWhenTimerEndsCheckBox->setChecked(m_settings->soundOnTimerEnd());
+    ui->showNotificationsWhenTimerEndsCheckBox->setChecked(m_settings->notificationOnTimerEnd());
+    ui->playTickTockDuringPomodoroCheckBox->setChecked(m_settings->tickTockDuringWork());
+    ui->playTickTockDuringBreakCheckBox->setChecked(m_settings->tickTockDuringBreak());
 }
 
 void PreferencesDialog::onAccepted()
 {
-    m_settings->setValue(QStringLiteral("shortBreakTime"), ui->shortBreakSpinBox->value());
-    m_settings->setValue(QStringLiteral("longBreakTime"), ui->longBreakSpinBox->value());
-    m_settings->setValue(QStringLiteral("workTime"), ui->workSpinBox->value());
-    m_settings->setValue(QStringLiteral("autoStartTimer"), ui->startTimerAutomaticallyCheckBox->isChecked());
-    m_settings->setValue(QStringLiteral("soundOnTimerStart"), ui->playSoundWhenTimerStartsCheckBox->isChecked());
-    m_settings->setValue(QStringLiteral("soundOnTimerEnd"), ui->playSoundWhenTimerEndsCheckBox->isChecked());
-    m_settings->setValue(QStringLiteral("notificationOnTimerEnd"), ui->showNotificationsWhenTimerEndsCheckBox->isChecked());
-    m_settings->setValue(QStringLiteral("tickTockDuringWork"), ui->playTickTockDuringPomodoroCheckBox->isChecked());
-    m_settings->setValue(QStringLiteral("tickTockDuringBreak"), ui->playTickTockDuringBreakCheckBox->isChecked());
-}
-
-bool PreferencesDialog::getBool(QString key, bool def)
-{
-    return m_settings->value(key, def).toBool();
-}
-
-int PreferencesDialog::getInt(QString key, int def)
-{
-    return m_settings->value(key, def).toInt();
+    m_settings->setShortBreakTime(ui->shortBreakSpinBox->value());
+    m_settings->setLongBreakTime(ui->longBreakSpinBox->value());
+    m_settings->setWorkTime(ui->workSpinBox->value());
+    m_settings->setAutoStartNextTimer(ui->startTimerAutomaticallyCheckBox->isChecked());
+    m_settings->setSoundOnTimerStart(ui->playSoundWhenTimerStartsCheckBox->isChecked());
+    m_settings->setSoundOnTimerEnd(ui->playSoundWhenTimerEndsCheckBox->isChecked());
+    m_settings->setNotificationOnTimerEnd(ui->showNotificationsWhenTimerEndsCheckBox->isChecked());
+    m_settings->setTickTockDuringWork(ui->playTickTockDuringPomodoroCheckBox->isChecked());
+    m_settings->setTickTockDuringBreak(ui->playTickTockDuringBreakCheckBox->isChecked());
 }

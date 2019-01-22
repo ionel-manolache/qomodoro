@@ -1,4 +1,4 @@
-#include "systrayicon.h"
+#include "application.h"
 #include <QAction>
 #include <QApplication>
 #include <QMenu>
@@ -7,19 +7,16 @@
 #include <QMessageBox>
 #include <QStateMachine>
 
-#include <QSettings>
 #include <QMediaPlayer>
 
 #include <QFile>
 
+#include "settings.h"
 #include "preferencesdialog.h"
 
 #include <QDebug>
 
 
-static const QString shortBreakString = QStringLiteral("shortBreakTime");
-static const QString longBreakString = QStringLiteral("longBreakTime");
-static const QString workString = QStringLiteral("workTime");
 static const QString autoStartString = QStringLiteral("autoStartTimer");
 static const QString soundOnTimerStartString = QStringLiteral("soundOnTimerStart");
 static const QString soundOnTimerEndString = QStringLiteral("soundOnTimerEnd");
@@ -41,7 +38,7 @@ static QString getTimeString(int minutes, int seconds)
 }
 
 
-SysTrayIcon::SysTrayIcon()
+Application::Application()
     : workTimeInSeconds(0)
     , shortBreakInSeconds(0)
     , longBreakInSeconds(0)
@@ -56,17 +53,34 @@ SysTrayIcon::SysTrayIcon()
     , longBreakState(new QState())
     , prefDialog(new PreferencesDialog)
 {
-    settings = new QSettings("com.qomodoro", "qomodoro");
+    settings = new Settings(this);
 
-    QMediaPlayer *player = new QMediaPlayer(this);
-    player->setVolume(100);
-    connect(player, QOverload<QMediaPlayer::Error>::of(&QMediaPlayer::error), this, &SysTrayIcon::onMediaPlayerError);
+    playStart = new QMediaPlayer(this);
+    playStart->setVolume(100);
+    playStart->setMedia(QUrl::fromLocalFile("/home/ionel/git/qomodoro/sounds/timer_start.mp3"));
+    connect(playStart, QOverload<QMediaPlayer::Error>::of(&QMediaPlayer::error), this, &Application::onMediaPlayerError);
 
-    workTimeInSeconds = settings->value(workString, DEFAULT_WORK).toInt() * 60;
-    shortBreakInSeconds = settings->value(shortBreakString, DEFAULT_BREAK).toInt() * 60;
-    longBreakInSeconds = settings->value(longBreakString, DEFAULT_BIG_BREAK).toInt() * 60;
+    playEnd = new QMediaPlayer(this);
+    playEnd->setVolume(100);
+    playEnd->setMedia(QUrl::fromLocalFile("/home/ionel/git/qomodoro/sounds/timer_end.mp3"));
+    connect(playEnd, QOverload<QMediaPlayer::Error>::of(&QMediaPlayer::error), this, &Application::onMediaPlayerError);
 
-    connect(timer, &QTimer::timeout, this, &SysTrayIcon::onTimerTimeout);
+    playTickTock = new QMediaPlayer(this);
+    playTickTock->setVolume(100);
+    playTickTock->setMedia(QUrl::fromLocalFile("/home/ionel/git/qomodoro/sounds/timer_tick.mp3"));
+    connect(playTickTock, QOverload<QMediaPlayer::Error>::of(&QMediaPlayer::error), this, &Application::onMediaPlayerError);
+
+    // workTimeInSeconds = settings->workTime() * 60;
+    // shortBreakInSeconds = settings->shortBreakTime() * 60;
+    // longBreakInSeconds = settings->longBreakTime() * 60;
+
+    //TEST VALUES:
+    workTimeInSeconds = 10;
+    shortBreakInSeconds = 5;
+    longBreakInSeconds = 10;
+    //---------------
+
+    connect(timer, &QTimer::timeout, this, &Application::onTimerTimeout);
 
     idleIcon = QIcon(":/icons/icon_tomato_black.ico");
     trayIcon->setIcon(idleIcon);
@@ -85,12 +99,12 @@ SysTrayIcon::SysTrayIcon()
     aboutAction = new QAction(tr("About qmodoro"), this);
     preferencesAction = new QAction(tr("Preferences..."), this);
 
-    connect(resetPomodorosAction, &QAction::triggered, this, &SysTrayIcon::onResetCount);
-    connect(aboutAction, &QAction::triggered, this, &SysTrayIcon::onAbout);
-    connect(preferencesAction, &QAction::triggered, this, &SysTrayIcon::onPreferences);
+    connect(resetPomodorosAction, &QAction::triggered, this, &Application::onResetCount);
+    connect(aboutAction, &QAction::triggered, this, &Application::onAbout);
+    connect(preferencesAction, &QAction::triggered, this, &Application::onPreferences);
 
     prefDialog->setSettings(settings);
-    connect(prefDialog, &PreferencesDialog::accepted, this, &SysTrayIcon::onPreferencesSaved);
+    connect(prefDialog, &PreferencesDialog::accepted, this, &Application::onPreferencesSaved);
 
     timerAction->setEnabled(false);
     pomodoroCountAction->setEnabled(false);
@@ -115,12 +129,14 @@ SysTrayIcon::SysTrayIcon()
 
     trayIcon->setContextMenu(contextMenu);
 
-    connect(idleState, &QState::entered, this, &SysTrayIcon::onIdleStateEntered);
-    connect(workState, &QState::entered, this, &SysTrayIcon::onWorkStateEntered);
-    connect(shortBreakState, &QState::entered, this, &SysTrayIcon::onShortBreakStateEntered);
-    connect(longBreakState, &QState::entered, this, &SysTrayIcon::onLongBreakStateEntered);
+    connect(idleState, &QState::entered, this, &Application::onIdleStateEntered);
+    connect(workState, &QState::entered, this, &Application::onWorkStateEntered);
+    connect(shortBreakState, &QState::entered, this, &Application::onShortBreakStateEntered);
+    connect(longBreakState, &QState::entered, this, &Application::onLongBreakStateEntered);
 
-    connect(workState, &QState::exited, this, &SysTrayIcon::onWorkStateExited);
+    connect(workState, &QState::exited, this, &Application::onWorkStateExited);
+    connect(shortBreakState, &QState::exited, this, &Application::onShortBreakStateExited);
+    connect(longBreakState, &QState::exited, this, &Application::onLongBreakStateExited);
 
     idleState->setObjectName("IdleState");
     idleState->addTransition(workAction, &QAction::triggered, workState);
@@ -129,19 +145,19 @@ SysTrayIcon::SysTrayIcon()
 
     workState->setObjectName("WorkState");
     workState->addTransition(stopAction, &QAction::triggered, idleState);
-    workState->addTransition(this, &SysTrayIcon::timeout, idleState);
+    workState->addTransition(this, &Application::timeout, idleState);
     workState->addTransition(shortBreakAction, &QAction::triggered, shortBreakState);
     workState->addTransition(longBreakAction, &QAction::triggered, longBreakState);
 
     shortBreakState->setObjectName("ShortBreakState");
     shortBreakState->addTransition(stopAction, &QAction::triggered, idleState);
-    shortBreakState->addTransition(this, &SysTrayIcon::timeout, idleState);
+    shortBreakState->addTransition(this, &Application::timeout, idleState);
     shortBreakState->addTransition(workAction, &QAction::triggered, workState);
     shortBreakState->addTransition(longBreakAction, &QAction::triggered, longBreakState);
 
     longBreakState->setObjectName("LongBreakState");
     longBreakState->addTransition(stopAction, &QAction::triggered, idleState);
-    longBreakState->addTransition(this, &SysTrayIcon::timeout, idleState);
+    longBreakState->addTransition(this, &Application::timeout, idleState);
     longBreakState->addTransition(workAction, &QAction::triggered, workState);
     longBreakState->addTransition(shortBreakAction, &QAction::triggered, shortBreakState);
 
@@ -153,15 +169,15 @@ SysTrayIcon::SysTrayIcon()
     machine->start();
 }
 
-void SysTrayIcon::show()
+void Application::show()
 {
     trayIcon->show();
 }
 
-void SysTrayIcon::onIdleStateEntered()
+void Application::onIdleStateEntered()
 {
-    //if (!tickTockSound->isFinished())
-        //tickTockSound->stop();
+    playStart->stop();
+    playTickTock->stop();
 
     trayIcon->setIcon(idleIcon);
     currentTimeInSeconds = 0;
@@ -171,71 +187,86 @@ void SysTrayIcon::onIdleStateEntered()
     timerAction->setText(getTimeString(0, 0));
 }
 
-void SysTrayIcon::playTimerStartSound()
+void Application::playTimerStartSound()
 {
-    QFile file("/Users/ionelmanolache/git/qomodoro/sounds/timer_start.mp3");
-    qDebug() << file.exists();
-    player->setMedia(QUrl::fromLocalFile("/Users/ionelmanolache/git/qomodoro/sounds/timer_start.mp3"));
-    player->play();
+    if (playStart->state() == QMediaPlayer::PlayingState)
+        playStart->stop();
+
+    if (settings->soundOnTimerStart())
+        playStart->play();
 }
 
-void SysTrayIcon::playTimerEndSound()
+void Application::playTimerEndSound()
 {
-    QFile file("/Users/ionelmanolache/git/qomodoro/sounds/timer_goes_off.mp3");
-    qDebug() << file.exists();
-    player->setMedia(QUrl::fromLocalFile("/Users/ionelmanolache/git/qomodoro/sounds/timer_goes_off.mp3"));
-    player->play();
+    if (playEnd->state() == QMediaPlayer::PlayingState)
+        playEnd->stop();
+
+    if (settings->soundOnTimerEnd())
+        playEnd->play();
 }
 
-void SysTrayIcon::playTickTockSound()
+void Application::playTickTockSound(bool work)
 {
-    QFile file("/Users/ionelmanolache/git/qomodoro/sounds/timer_tick.mp3");
-    qDebug() << file.exists();
-    player->setMedia(QUrl::fromLocalFile("/Users/ionelmanolache/git/qomodoro/sounds/timer_tick.mp3"));
-    player->play();
+    if (playTickTock->state() == QMediaPlayer::PlayingState)
+        playTickTock->stop();
+
+    if (work && settings->tickTockDuringWork())
+        playTickTock->play();
+
+    if (!work && settings->tickTockDuringBreak())
+        playTickTock->play();
 }
 
-void SysTrayIcon::onWorkStateEntered()
+void Application::onWorkStateEntered()
 {
-    if (settings->value(soundOnTimerStartString, false).toBool())
-        playTimerStartSound();
+    playTimerStartSound();
 
     stateChanged(workAction->icon());
 
-    if (settings->value(tickTockDuringWorkString, false).toBool())
-        playTickTockSound();
+    playTickTockSound(true);
 }
 
-void SysTrayIcon::onShortBreakStateEntered()
+void Application::onShortBreakStateEntered()
 {
-    if (settings->value(soundOnTimerStartString, false).toBool())
-        playTimerStartSound();
+    playTimerStartSound();
+
     stateChanged(shortBreakAction->icon());
-    if (settings->value(tickTockDuringBreakString, false).toBool())
-        playTickTockSound();
+
+    playTickTockSound(false);
 }
 
-void SysTrayIcon::onLongBreakStateEntered()
+void Application::onLongBreakStateEntered()
 {
-    if (settings->value(soundOnTimerStartString, false).toBool())
-        playTimerStartSound();
+    playTimerStartSound();
+
     stateChanged(longBreakAction->icon());
-    if (settings->value(tickTockDuringBreakString, false).toBool())
-        playTickTockSound();
+
+    playTickTockSound(false);
 }
 
-void SysTrayIcon::onWorkStateExited()
+void Application::onWorkStateExited()
 {
     if (currentTimeInSeconds >= workTimeInSeconds) {
         ++pomodoros;
         pomodoroCountAction->setText(tr("%1 pomodoros").arg(pomodoros));
         resetPomodorosAction->setEnabled(true);
-        if (settings->value(soundOnTimerEndString, false).toBool())
-            playTimerEndSound();
+        playTimerEndSound();
     }
 }
 
-void SysTrayIcon::stateChanged(QIcon icon)
+void Application::onShortBreakStateExited()
+{
+    if (currentTimeInSeconds >= shortBreakInSeconds)
+        playTimerEndSound();
+}
+
+void Application::onLongBreakStateExited()
+{
+    if (currentTimeInSeconds >= longBreakInSeconds)
+        playTimerEndSound();
+}
+
+void Application::stateChanged(QIcon icon)
 {
     trayIcon->setIcon(icon);
     currentTimeInSeconds = 0;
@@ -243,7 +274,7 @@ void SysTrayIcon::stateChanged(QIcon icon)
     stopAction->setEnabled(true);
 }
 
-void SysTrayIcon::onMediaPlayerError(QMediaPlayer::Error error)
+void Application::onMediaPlayerError(QMediaPlayer::Error error)
 {
     switch(error) {
     case QMediaPlayer::NoError:
@@ -264,37 +295,46 @@ void SysTrayIcon::onMediaPlayerError(QMediaPlayer::Error error)
     case QMediaPlayer::ServiceMissingError:
         qDebug() << "ServiceMissing Error";
         break;
+    case QMediaPlayer::MediaIsPlaylist:
+        qDebug() << "MediaIsPlaylist Error";
+        break;
     }
 }
 
-void SysTrayIcon::onResetCount()
+void Application::onResetCount()
 {
     pomodoroCountAction->setText(tr("No Pomodoros"));
     pomodoros = 0;
     resetPomodorosAction->setEnabled(false);
 }
 
-void SysTrayIcon::onAbout()
+void Application::onAbout()
 {
     QMessageBox::about(nullptr, tr("About %1").arg(qApp->applicationName())
                        , tr("%1 is a pomodoro-style timebox timer app, aimed for productivity.")
                        .arg(qApp->applicationName()));
 }
 
-void SysTrayIcon::onPreferences()
+void Application::onPreferences()
 {
     prefDialog->loadSettings();
     prefDialog->show();
 }
 
-void SysTrayIcon::onPreferencesSaved()
+void Application::onPreferencesSaved()
 {
-    workTimeInSeconds = settings->value(workString, DEFAULT_WORK).toInt() * 60;
-    shortBreakInSeconds = settings->value(shortBreakString, DEFAULT_BREAK).toInt() * 60;
-    longBreakInSeconds = settings->value(longBreakString, DEFAULT_BIG_BREAK).toInt() * 60;
+    //workTimeInSeconds = settings->workTime() * 60;
+    //shortBreakInSeconds = settings->shortBreakTime() * 60;
+    //longBreakInSeconds = settings->longBreakTime() * 60;
+
+    //TEST VALUES:
+    workTimeInSeconds = 10;
+    shortBreakInSeconds = 5;
+    longBreakInSeconds = 10;
+    //---------------
 }
 
-void SysTrayIcon::onTimerTimeout()
+void Application::onTimerTimeout()
 {
     if (machine->configuration().size() == 0) {
         return;

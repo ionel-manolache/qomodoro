@@ -7,18 +7,17 @@ namespace Ui {
 class PreferencesDialog;
 }
 
-class QSettings;
+class Settings;
 
 class PreferencesDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit PreferencesDialog(QWidget *parent = 0);
+    explicit PreferencesDialog(QWidget *parent = nullptr);
     ~PreferencesDialog();
 
-    void setSettings(QSettings *settings);
-    QSettings* settings();
+    void setSettings(Settings *settings);
 
     void loadSettings();
 
@@ -26,13 +25,9 @@ private slots:
     void onAccepted();
 
 private:
-    bool getBool(QString key, bool def);
-    int getInt(QString key, int def);
-
-private:
     Ui::PreferencesDialog *ui;
 
-    QSettings *m_settings;
+    Settings *m_settings;
 };
 
 #endif // PREFERENCESDIALOG_H

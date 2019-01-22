@@ -11,12 +11,14 @@ CONFIG += c++11
 
 SOURCES += \
         main.cpp \
-        systrayicon.cpp \
-    preferencesdialog.cpp
+    preferencesdialog.cpp \
+    settings.cpp \
+    application.cpp
 
 HEADERS += \
-        systrayicon.h \
-    preferencesdialog.h
+    preferencesdialog.h \
+    settings.h \
+    application.h
 
 FORMS += \
     preferencesdialog.ui

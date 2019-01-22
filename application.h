@@ -9,14 +9,14 @@ class QStateMachine;
 class QState;
 class QTimer;
 class QAction;
-class QSettings;
+class Settings;
 class PreferencesDialog;
 
-class SysTrayIcon : public QObject
+class Application : public QObject
 {
     Q_OBJECT
 public:
-    SysTrayIcon();
+    Application();
 
     void show();
 
@@ -41,6 +41,8 @@ private slots:
     void onShortBreakStateEntered();
     void onLongBreakStateEntered();
     void onWorkStateExited();
+    void onShortBreakStateExited();
+    void onLongBreakStateExited();
 
     void onMediaPlayerError(QMediaPlayer::Error error);
 
@@ -52,7 +54,7 @@ private:
 
     void playTimerStartSound();
     void playTimerEndSound();
-    void playTickTockSound();
+    void playTickTockSound(bool work = false);
 
 private:
     int workTimeInSeconds;
@@ -85,11 +87,13 @@ private:
 
     PreferencesDialog *prefDialog;
 
-    QSettings *settings;
+    Settings *settings;
 
     QIcon idleIcon;
 
-    QMediaPlayer *player;
+    QMediaPlayer *playStart;
+    QMediaPlayer *playEnd;
+    QMediaPlayer *playTickTock;
 };
 
 #endif // SYSTRAYICON_H
