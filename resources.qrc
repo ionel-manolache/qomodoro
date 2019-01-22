@@ -1,13 +1,13 @@
 <RCC>
     <qresource prefix="/">
-        <file>icons/icon_tomato_red.ico</file>
-        <file>icons/icon_tomato_black.ico</file>
-        <file>icons/icon_tomato_green.ico</file>
-        <file>icons/icon_tomato_blue.ico</file>
         <file>icons/stop.svg</file>
         <file>icons/clock.svg</file>
         <file>sounds/timer_end.mp3</file>
         <file>sounds/timer_start.mp3</file>
         <file>sounds/timer_tick.mp3</file>
+        <file>icons/icon_tomato_blue.png</file>
+        <file>icons/icon_tomato_green.png</file>
+        <file>icons/icon_tomato_red.png</file>
+        <file>icons/icon_tomato_yellow.png</file>
     </qresource>
 </RCC>

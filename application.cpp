@@ -82,17 +82,17 @@ Application::Application()
 
     connect(timer, &QTimer::timeout, this, &Application::onTimerTimeout);
 
-    idleIcon = QIcon(":/icons/icon_tomato_black.ico");
+    idleIcon = QIcon(":/icons/icon_tomato_red.png");
     trayIcon->setIcon(idleIcon);
 
     QMenu *contextMenu = new QMenu();
     QAction *quit = new QAction(tr("Quit"), this);
     quit->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q));
 
-    workAction = new QAction(QIcon(":/icons/icon_tomato_red.ico"), tr("Pomodoro"), this);
+    workAction = new QAction(QIcon(":/icons/icon_tomato_blue.png"), tr("Pomodoro"), this);
     stopAction = new QAction(QIcon(":/icons/stop.svg"), tr("Stop"), this);
-    shortBreakAction = new QAction(QIcon(":/icons/icon_tomato_green.ico"), tr("Short break"), this);
-    longBreakAction = new QAction(QIcon(":/icons/icon_tomato_blue.ico"), tr("Long break"), this);
+    shortBreakAction = new QAction(QIcon(":/icons/icon_tomato_green.png"), tr("Short break"), this);
+    longBreakAction = new QAction(QIcon(":/icons/icon_tomato_yellow.png"), tr("Long break"), this);
     timerAction = new QAction(QIcon(":/icons/clock.svg"), getTimeString(0, 0), this);
     pomodoroCountAction = new QAction(tr("No Pomodoros"), this);
     resetPomodorosAction = new QAction(tr("Reset count"), this);
