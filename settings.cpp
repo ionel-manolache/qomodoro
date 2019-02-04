@@ -66,7 +66,7 @@ void Settings::setAutoStartNextTimer(bool autostart)
 
 bool Settings::soundOnTimerStart()
 {
-    return m_settings->value(soundOnTimerStartString, false).toBool();
+    return m_settings->value(soundOnTimerStartString, true).toBool();
 }
 
 void Settings::setSoundOnTimerStart(bool on)
@@ -76,7 +76,7 @@ void Settings::setSoundOnTimerStart(bool on)
 
 bool Settings::soundOnTimerEnd()
 {
-    return m_settings->value(soundOnTimerEndString, false).toBool();
+    return m_settings->value(soundOnTimerEndString, true).toBool();
 }
 
 void Settings::setSoundOnTimerEnd(bool on)

@@ -1,6 +1,7 @@
-QT       += core gui multimedia
-
-greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
+QT += core
+QT += gui
+QT += multimedia
+QT += widgets
 
 TARGET = qomodoro
 TEMPLATE = app
@@ -10,7 +11,7 @@ DEFINES += QT_DEPRECATED_WARNINGS
 CONFIG += c++11
 
 SOURCES += \
-        main.cpp \
+    main.cpp \
     preferencesdialog.cpp \
     settings.cpp \
     application.cpp

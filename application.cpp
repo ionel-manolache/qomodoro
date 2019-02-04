@@ -58,26 +58,26 @@ Application::Application()
     playStart = new QMediaPlayer(this);
     playStart->setVolume(100);
     playStart->setMedia(QUrl::fromLocalFile("/home/ionel/git/qomodoro/sounds/timer_start.mp3"));
-    connect(playStart, QOverload<QMediaPlayer::Error>::of(&QMediaPlayer::error), this, &Application::onMediaPlayerError);
+    connect(playStart, static_cast<void(QMediaPlayer::*)(QMediaPlayer::Error)>(&QMediaPlayer::error), this, &Application::onMediaPlayerError);
 
     playEnd = new QMediaPlayer(this);
     playEnd->setVolume(100);
     playEnd->setMedia(QUrl::fromLocalFile("/home/ionel/git/qomodoro/sounds/timer_end.mp3"));
-    connect(playEnd, QOverload<QMediaPlayer::Error>::of(&QMediaPlayer::error), this, &Application::onMediaPlayerError);
+    connect(playEnd, static_cast<void(QMediaPlayer::*)(QMediaPlayer::Error)>(&QMediaPlayer::error), this, &Application::onMediaPlayerError);
 
     playTickTock = new QMediaPlayer(this);
     playTickTock->setVolume(100);
     playTickTock->setMedia(QUrl::fromLocalFile("/home/ionel/git/qomodoro/sounds/timer_tick.mp3"));
-    connect(playTickTock, QOverload<QMediaPlayer::Error>::of(&QMediaPlayer::error), this, &Application::onMediaPlayerError);
+    connect(playTickTock, static_cast<void(QMediaPlayer::*)(QMediaPlayer::Error)>(&QMediaPlayer::error), this, &Application::onMediaPlayerError);
 
-    // workTimeInSeconds = settings->workTime() * 60;
-    // shortBreakInSeconds = settings->shortBreakTime() * 60;
-    // longBreakInSeconds = settings->longBreakTime() * 60;
+    workTimeInSeconds = settings->workTime() * 60;
+    shortBreakInSeconds = settings->shortBreakTime() * 60;
+    longBreakInSeconds = settings->longBreakTime() * 60;
 
     //TEST VALUES:
-    workTimeInSeconds = 10;
-    shortBreakInSeconds = 5;
-    longBreakInSeconds = 10;
+    // workTimeInSeconds = 10;
+    // shortBreakInSeconds = 5;
+    // longBreakInSeconds = 10;
     //---------------
 
     connect(timer, &QTimer::timeout, this, &Application::onTimerTimeout);
