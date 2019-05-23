@@ -20,12 +20,7 @@ public:
 
     void show();
 
-    enum Period{
-        IDLE = 0,
-        WORK,
-        SHORT_BREAK,
-        LONG_BREAK
-    };
+    enum Period { IDLE = 0, WORK, SHORT_BREAK, LONG_BREAK };
 signals:
     void timeout();
 

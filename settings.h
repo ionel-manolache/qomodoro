@@ -5,7 +5,7 @@
 
 class QSettings;
 
-class Settings: public QObject
+class Settings : public QObject
 {
     Q_OBJECT
 public:
@@ -30,7 +30,6 @@ public:
     void setTickTockDuringWork(bool on);
     bool tickTockDuringBreak();
     void setTickTockDuringBreak(bool on);
-
 
 private:
     QSettings *m_settings;

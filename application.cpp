@@ -16,7 +16,6 @@
 
 #include <QDebug>
 
-
 static const QString autoStartString = QStringLiteral("autoStartTimer");
 static const QString soundOnTimerStartString = QStringLiteral("soundOnTimerStart");
 static const QString soundOnTimerEndString = QStringLiteral("soundOnTimerEnd");
@@ -26,55 +25,57 @@ static const QString tickTockDuringBreakString = QStringLiteral("tickTockDuringB
 
 static const QString timeString = QStringLiteral("%1:%2");
 
-
 #define DEFAULT_WORK 25
 #define DEFAULT_BREAK 5
 #define DEFAULT_BIG_BREAK 30
 
 static QString getTimeString(int minutes, int seconds)
 {
-    return timeString.arg(minutes, 2, 10, QChar('0'))
-                     .arg(seconds, 2, 10, QChar('0'));
+    return timeString.arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 10, QChar('0'));
 }
 
-
 Application::Application()
-    : workTimeInSeconds(0)
-    , shortBreakInSeconds(0)
-    , longBreakInSeconds(0)
-    , currentTimeInSeconds(0)
-    , pomodoros(0)
-    , trayIcon(new QSystemTrayIcon(this))
-    , timer(new QTimer(this))
-    , machine(new QStateMachine(this))
-    , idleState(new QState())
-    , workState(new QState())
-    , shortBreakState(new QState())
-    , longBreakState(new QState())
-    , prefDialog(new PreferencesDialog)
+    : workTimeInSeconds(0),
+      shortBreakInSeconds(0),
+      longBreakInSeconds(0),
+      currentTimeInSeconds(0),
+      pomodoros(0),
+      trayIcon(new QSystemTrayIcon(this)),
+      timer(new QTimer(this)),
+      machine(new QStateMachine(this)),
+      idleState(new QState()),
+      workState(new QState()),
+      shortBreakState(new QState()),
+      longBreakState(new QState()),
+      prefDialog(new PreferencesDialog)
 {
     settings = new Settings(this);
 
     playStart = new QMediaPlayer(this);
     playStart->setVolume(100);
     playStart->setMedia(QUrl::fromLocalFile("/home/ionel/git/qomodoro/sounds/timer_start.mp3"));
-    connect(playStart, static_cast<void(QMediaPlayer::*)(QMediaPlayer::Error)>(&QMediaPlayer::error), this, &Application::onMediaPlayerError);
+    connect(playStart,
+            static_cast<void (QMediaPlayer::*)(QMediaPlayer::Error)>(&QMediaPlayer::error), this,
+            &Application::onMediaPlayerError);
 
     playEnd = new QMediaPlayer(this);
     playEnd->setVolume(100);
     playEnd->setMedia(QUrl::fromLocalFile("/home/ionel/git/qomodoro/sounds/timer_end.mp3"));
-    connect(playEnd, static_cast<void(QMediaPlayer::*)(QMediaPlayer::Error)>(&QMediaPlayer::error), this, &Application::onMediaPlayerError);
+    connect(playEnd, static_cast<void (QMediaPlayer::*)(QMediaPlayer::Error)>(&QMediaPlayer::error),
+            this, &Application::onMediaPlayerError);
 
     playTickTock = new QMediaPlayer(this);
     playTickTock->setVolume(100);
     playTickTock->setMedia(QUrl::fromLocalFile("/home/ionel/git/qomodoro/sounds/timer_tick.mp3"));
-    connect(playTickTock, static_cast<void(QMediaPlayer::*)(QMediaPlayer::Error)>(&QMediaPlayer::error), this, &Application::onMediaPlayerError);
+    connect(playTickTock,
+            static_cast<void (QMediaPlayer::*)(QMediaPlayer::Error)>(&QMediaPlayer::error), this,
+            &Application::onMediaPlayerError);
 
     workTimeInSeconds = settings->workTime() * 60;
     shortBreakInSeconds = settings->shortBreakTime() * 60;
     longBreakInSeconds = settings->longBreakTime() * 60;
 
-    //TEST VALUES:
+    // TEST VALUES:
     // workTimeInSeconds = 10;
     // shortBreakInSeconds = 5;
     // longBreakInSeconds = 10;
@@ -276,7 +277,7 @@ void Application::stateChanged(QIcon icon)
 
 void Application::onMediaPlayerError(QMediaPlayer::Error error)
 {
-    switch(error) {
+    switch (error) {
     case QMediaPlayer::NoError:
         qDebug() << "No error";
         break;
@@ -310,9 +311,9 @@ void Application::onResetCount()
 
 void Application::onAbout()
 {
-    QMessageBox::about(nullptr, tr("About %1").arg(qApp->applicationName())
-                       , tr("%1 is a pomodoro-style timebox timer app, aimed for productivity.")
-                       .arg(qApp->applicationName()));
+    QMessageBox::about(nullptr, tr("About %1").arg(qApp->applicationName()),
+                       tr("%1 is a pomodoro-style timebox timer app, aimed for productivity.")
+                               .arg(qApp->applicationName()));
 }
 
 void Application::onPreferences()
@@ -323,11 +324,11 @@ void Application::onPreferences()
 
 void Application::onPreferencesSaved()
 {
-    //workTimeInSeconds = settings->workTime() * 60;
-    //shortBreakInSeconds = settings->shortBreakTime() * 60;
-    //longBreakInSeconds = settings->longBreakTime() * 60;
+    // workTimeInSeconds = settings->workTime() * 60;
+    // shortBreakInSeconds = settings->shortBreakTime() * 60;
+    // longBreakInSeconds = settings->longBreakTime() * 60;
 
-    //TEST VALUES:
+    // TEST VALUES:
     workTimeInSeconds = 10;
     shortBreakInSeconds = 5;
     longBreakInSeconds = 10;

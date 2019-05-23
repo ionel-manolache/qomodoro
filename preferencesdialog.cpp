@@ -17,9 +17,8 @@ static const int DEFAULT_WORK = 25;
 static const int DEFAULT_BREAK = 5;
 static const int DEFAULT_BIG_BREAK = 30;
 
-PreferencesDialog::PreferencesDialog(QWidget *parent) :
-    QDialog(parent),
-    ui(new Ui::PreferencesDialog)
+PreferencesDialog::PreferencesDialog(QWidget *parent)
+    : QDialog(parent), ui(new Ui::PreferencesDialog)
 {
     ui->setupUi(this);
 
