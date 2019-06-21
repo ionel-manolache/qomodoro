@@ -12,17 +12,16 @@ static const QString notificationOnTimerEndString = QStringLiteral("notification
 static const QString tickTockDuringWorkString = QStringLiteral("tickTockDuringWork");
 static const QString tickTockDuringBreakString = QStringLiteral("tickTockDuringBreak");
 
-#define DEFAULT_WORK 25
-#define DEFAULT_BREAK 5
-#define DEFAULT_BIG_BREAK 30
+constexpr int DEFAULT_WORK = 25;
+constexpr int DEFAULT_BREAK = 5;
+constexpr int DEFAULT_BIG_BREAK = 30;
 
-Settings::Settings(QObject *parent)
-    : QObject(parent)
+Settings::Settings(QObject *parent) : QObject(parent)
 {
     m_settings = new QSettings("com.qomodoro", "qomodoro", parent);
 }
 
-Settings::~Settings() { }
+Settings::~Settings() {}
 
 int Settings::shortBreakTime()
 {

@@ -3,20 +3,6 @@
 
 #include "settings.h"
 
-static const QString shortBreakString = QStringLiteral("shortBreakTime");
-static const QString longBreakString = QStringLiteral("longBreakTime");
-static const QString workString = QStringLiteral("workTime");
-static const QString autoStartString = QStringLiteral("autoStartTimer");
-static const QString soundOnTimerStartString = QStringLiteral("soundOnTimerStart");
-static const QString soundOnTimerEndString = QStringLiteral("soundOnTimerEnd");
-static const QString notificationOnTimerEndString = QStringLiteral("notificationOnTimerEnd");
-static const QString tickTockDuringWorkString = QStringLiteral("tickTockDuringWork");
-static const QString tickTockDuringBreakString = QStringLiteral("tickTockDuringBreak");
-
-static const int DEFAULT_WORK = 25;
-static const int DEFAULT_BREAK = 5;
-static const int DEFAULT_BIG_BREAK = 30;
-
 PreferencesDialog::PreferencesDialog(QWidget *parent)
     : QDialog(parent), ui(new Ui::PreferencesDialog)
 {

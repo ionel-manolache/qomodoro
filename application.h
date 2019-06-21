@@ -58,7 +58,7 @@ private:
     Period currentPeriod;
     int currentTimeInSeconds;
 
-    int pomodoros;
+    int workPeriods;
 
     QSystemTrayIcon *trayIcon;
     QTimer *timer;
@@ -68,8 +68,8 @@ private:
     QAction *shortBreakAction;
     QAction *longBreakAction;
     QAction *timerAction;
-    QAction *pomodoroCountAction;
-    QAction *resetPomodorosAction;
+    QAction *workPeriodsCountAction;
+    QAction *resetWorkPeriodsAction;
     QAction *aboutAction;
     QAction *preferencesAction;
 

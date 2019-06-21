@@ -16,18 +16,7 @@
 
 #include <QDebug>
 
-static const QString autoStartString = QStringLiteral("autoStartTimer");
-static const QString soundOnTimerStartString = QStringLiteral("soundOnTimerStart");
-static const QString soundOnTimerEndString = QStringLiteral("soundOnTimerEnd");
-static const QString notificationOnTimerEndString = QStringLiteral("notificationOnTimerEnd");
-static const QString tickTockDuringWorkString = QStringLiteral("tickTockDuringWork");
-static const QString tickTockDuringBreakString = QStringLiteral("tickTockDuringBreak");
-
-static const QString timeString = QStringLiteral("%1:%2");
-
-#define DEFAULT_WORK 25
-#define DEFAULT_BREAK 5
-#define DEFAULT_BIG_BREAK 30
+static const QString timeString("%1:%2");
 
 static QString getTimeString(int minutes, int seconds)
 {
@@ -39,7 +28,7 @@ Application::Application()
       shortBreakInSeconds(0),
       longBreakInSeconds(0),
       currentTimeInSeconds(0),
-      pomodoros(0),
+      workPeriods(0),
       trayIcon(new QSystemTrayIcon(this)),
       timer(new QTimer(this)),
       machine(new QStateMachine(this)),
@@ -52,21 +41,21 @@ Application::Application()
     settings = new Settings(this);
 
     playStart = new QMediaPlayer(this);
-    playStart->setVolume(100);
-    playStart->setMedia(QUrl::fromLocalFile("/home/ionel/git/qomodoro/sounds/timer_start.mp3"));
+    playStart->setVolume(90);
+    playStart->setMedia(QUrl("qrc:/sounds/timer_start.mp3"));
     connect(playStart,
             static_cast<void (QMediaPlayer::*)(QMediaPlayer::Error)>(&QMediaPlayer::error), this,
             &Application::onMediaPlayerError);
 
     playEnd = new QMediaPlayer(this);
-    playEnd->setVolume(100);
-    playEnd->setMedia(QUrl::fromLocalFile("/home/ionel/git/qomodoro/sounds/timer_end.mp3"));
+    playEnd->setVolume(90);
+    playEnd->setMedia(QUrl("qrc:/sounds/timer_end.mp3"));
     connect(playEnd, static_cast<void (QMediaPlayer::*)(QMediaPlayer::Error)>(&QMediaPlayer::error),
             this, &Application::onMediaPlayerError);
 
     playTickTock = new QMediaPlayer(this);
-    playTickTock->setVolume(100);
-    playTickTock->setMedia(QUrl::fromLocalFile("/home/ionel/git/qomodoro/sounds/timer_tick.mp3"));
+    playTickTock->setVolume(90);
+    playTickTock->setMedia(QUrl("qrc:/sounds/timer_tick.mp3"));
     connect(playTickTock,
             static_cast<void (QMediaPlayer::*)(QMediaPlayer::Error)>(&QMediaPlayer::error), this,
             &Application::onMediaPlayerError);
@@ -74,12 +63,6 @@ Application::Application()
     workTimeInSeconds = settings->workTime() * 60;
     shortBreakInSeconds = settings->shortBreakTime() * 60;
     longBreakInSeconds = settings->longBreakTime() * 60;
-
-    // TEST VALUES:
-    // workTimeInSeconds = 10;
-    // shortBreakInSeconds = 5;
-    // longBreakInSeconds = 10;
-    //---------------
 
     connect(timer, &QTimer::timeout, this, &Application::onTimerTimeout);
 
@@ -90,17 +73,17 @@ Application::Application()
     QAction *quit = new QAction(tr("Quit"), this);
     quit->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q));
 
-    workAction = new QAction(QIcon(":/icons/icon_tomato_blue.png"), tr("Pomodoro"), this);
+    workAction = new QAction(QIcon(":/icons/icon_tomato_blue.png"), tr("Work"), this);
     stopAction = new QAction(QIcon(":/icons/stop.svg"), tr("Stop"), this);
     shortBreakAction = new QAction(QIcon(":/icons/icon_tomato_green.png"), tr("Short break"), this);
     longBreakAction = new QAction(QIcon(":/icons/icon_tomato_yellow.png"), tr("Long break"), this);
     timerAction = new QAction(QIcon(":/icons/clock.svg"), getTimeString(0, 0), this);
-    pomodoroCountAction = new QAction(tr("No Pomodoros"), this);
-    resetPomodorosAction = new QAction(tr("Reset count"), this);
+    workPeriodsCountAction = new QAction(tr("No work periods"), this);
+    resetWorkPeriodsAction = new QAction(tr("Reset count"), this);
     aboutAction = new QAction(tr("About qmodoro"), this);
     preferencesAction = new QAction(tr("Preferences..."), this);
 
-    connect(resetPomodorosAction, &QAction::triggered, this, &Application::onResetCount);
+    connect(resetWorkPeriodsAction, &QAction::triggered, this, &Application::onResetCount);
     connect(aboutAction, &QAction::triggered, this, &Application::onAbout);
     connect(preferencesAction, &QAction::triggered, this, &Application::onPreferences);
 
@@ -108,16 +91,16 @@ Application::Application()
     connect(prefDialog, &PreferencesDialog::accepted, this, &Application::onPreferencesSaved);
 
     timerAction->setEnabled(false);
-    pomodoroCountAction->setEnabled(false);
+    workPeriodsCountAction->setEnabled(false);
     stopAction->setEnabled(false);
-    resetPomodorosAction->setEnabled(false);
+    resetWorkPeriodsAction->setEnabled(false);
 
     connect(quit, &QAction::triggered, qApp, &QApplication::quit);
     contextMenu->addAction(timerAction);
     contextMenu->addAction(stopAction);
     contextMenu->addSeparator();
-    contextMenu->addAction(pomodoroCountAction);
-    contextMenu->addAction(resetPomodorosAction);
+    contextMenu->addAction(workPeriodsCountAction);
+    contextMenu->addAction(resetWorkPeriodsAction);
     contextMenu->addSeparator();
     contextMenu->addAction(workAction);
     contextMenu->addAction(shortBreakAction);
@@ -248,9 +231,9 @@ void Application::onLongBreakStateEntered()
 void Application::onWorkStateExited()
 {
     if (currentTimeInSeconds >= workTimeInSeconds) {
-        ++pomodoros;
-        pomodoroCountAction->setText(tr("%1 pomodoros").arg(pomodoros));
-        resetPomodorosAction->setEnabled(true);
+        ++workPeriods;
+        workPeriodsCountAction->setText(tr("%1 work periods").arg(workPeriods));
+        resetWorkPeriodsAction->setEnabled(true);
         playTimerEndSound();
     }
 }
@@ -277,6 +260,10 @@ void Application::stateChanged(QIcon icon)
 
 void Application::onMediaPlayerError(QMediaPlayer::Error error)
 {
+    QMediaPlayer *player = qobject_cast<QMediaPlayer *>(QObject::sender());
+    qDebug() << player->currentMedia().canonicalUrl().toString();
+
+    qDebug() << "Application::onMediaPlayerError(...) : ";
     switch (error) {
     case QMediaPlayer::NoError:
         qDebug() << "No error";
@@ -304,16 +291,16 @@ void Application::onMediaPlayerError(QMediaPlayer::Error error)
 
 void Application::onResetCount()
 {
-    pomodoroCountAction->setText(tr("No Pomodoros"));
-    pomodoros = 0;
-    resetPomodorosAction->setEnabled(false);
+    workPeriodsCountAction->setText(tr("No work periods"));
+    workPeriods = 0;
+    resetWorkPeriodsAction->setEnabled(false);
 }
 
 void Application::onAbout()
 {
-    QMessageBox::about(nullptr, tr("About %1").arg(qApp->applicationName()),
-                       tr("%1 is a pomodoro-style timebox timer app, aimed for productivity.")
-                               .arg(qApp->applicationName()));
+    QMessageBox::about(
+            nullptr, tr("About %1").arg(qApp->applicationName()),
+            tr("%1 is a timebox timer app, aimed for productivity.").arg(qApp->applicationName()));
 }
 
 void Application::onPreferences()
@@ -324,15 +311,9 @@ void Application::onPreferences()
 
 void Application::onPreferencesSaved()
 {
-    // workTimeInSeconds = settings->workTime() * 60;
-    // shortBreakInSeconds = settings->shortBreakTime() * 60;
-    // longBreakInSeconds = settings->longBreakTime() * 60;
-
-    // TEST VALUES:
-    workTimeInSeconds = 10;
-    shortBreakInSeconds = 5;
-    longBreakInSeconds = 10;
-    //---------------
+    workTimeInSeconds = settings->workTime() * 60;
+    shortBreakInSeconds = settings->shortBreakTime() * 60;
+    longBreakInSeconds = settings->longBreakTime() * 60;
 }
 
 void Application::onTimerTimeout()
@@ -345,12 +326,13 @@ void Application::onTimerTimeout()
 
     int timeInSeconds = 0;
     QAbstractState *state = machine->configuration().toList().first();
-    if (state == workState)
+    if (state == workState) {
         timeInSeconds = workTimeInSeconds;
-    else if (state == shortBreakState)
+    } else if (state == shortBreakState) {
         timeInSeconds = shortBreakInSeconds;
-    else if (state == longBreakState)
+    } else if (state == longBreakState) {
         timeInSeconds = longBreakInSeconds;
+    }
 
     if (timeInSeconds > 0) {
         if (currentTimeInSeconds >= timeInSeconds) {
