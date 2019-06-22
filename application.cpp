@@ -68,7 +68,7 @@ Application::Application(QObject *parent)
     connect(stateMachine, &StateMachine::longBreakStateExited, this,
             &Application::onLongBreakStateExited);
 
-    stateMachine->setUpActions();
+    stateMachine->setupTransitions(this);
     stateMachine->start();
 }
 

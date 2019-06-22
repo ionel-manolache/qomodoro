@@ -4,8 +4,8 @@
 
 #include <QAction>
 
-StateMachine::StateMachine(Application *app)
-    : appIcon(app),
+StateMachine::StateMachine(QObject *parent)
+    : QObject(parent),
       machine(new QStateMachine(this)),
       idleState(new QState()),
       workState(new QState()),
@@ -40,7 +40,7 @@ void StateMachine::stop()
     machine->stop();
 }
 
-void StateMachine::setUpActions()
+void StateMachine::setupTransitions(Application *appIcon)
 {
     idleState->setObjectName("IdleState");
     idleState->addTransition(appIcon->workAction(), &QAction::triggered, workState);

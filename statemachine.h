@@ -11,12 +11,12 @@ class StateMachine : public QObject
 {
     Q_OBJECT
 public:
-    StateMachine(Application *app);
+    StateMachine(QObject *parent = nullptr);
 
     void start();
     void stop();
 
-    void setUpActions();
+    void setupTransitions(Application *app);
 
     bool isEmpty();
 
@@ -34,8 +34,6 @@ signals:
     void longBreakStateExited();
 
 private:
-    Application *appIcon;
-
     QStateMachine *machine;
     QState *idleState;
     QState *workState;
