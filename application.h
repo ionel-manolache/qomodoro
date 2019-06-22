@@ -23,11 +23,6 @@ public:
 
     enum Period { IDLE = 0, WORK, SHORT_BREAK, LONG_BREAK };
 
-    QAction *workAction() { return _workAction; }
-    QAction *stopAction() { return _stopAction; }
-    QAction *shortBreakAction() { return _shortBreakAction; }
-    QAction *longBreakAction() { return _longBreakAction; }
-
 signals:
     void timeout();
 
@@ -49,6 +44,8 @@ private slots:
 private:
     void setupActions();
     void setupContextMenu();
+
+    void startStateMachine();
 
     void loadSettings();
     void saveSettings();
@@ -72,10 +69,10 @@ private:
     QSystemTrayIcon *trayIcon;
     QTimer *timer;
 
-    QAction *_workAction;
-    QAction *_stopAction;
-    QAction *_shortBreakAction;
-    QAction *_longBreakAction;
+    QAction *workAction;
+    QAction *stopAction;
+    QAction *shortBreakAction;
+    QAction *longBreakAction;
     QAction *timerAction;
     QAction *workPeriodsCountAction;
     QAction *resetWorkPeriodsAction;

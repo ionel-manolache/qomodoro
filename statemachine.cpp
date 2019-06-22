@@ -40,31 +40,30 @@ void StateMachine::stop()
     machine->stop();
 }
 
-void StateMachine::setupTransitions(Application *appIcon)
+void StateMachine::setupTransitions()
 {
     idleState->setObjectName("IdleState");
-    idleState->addTransition(appIcon->workAction(), &QAction::triggered, workState);
-    idleState->addTransition(appIcon->shortBreakAction(), &QAction::triggered, shortBreakState);
-    idleState->addTransition(appIcon->longBreakAction(), &QAction::triggered, longBreakState);
+    idleState->addTransition(this, &StateMachine::workAction, workState);
+    idleState->addTransition(this, &StateMachine::shortBreakAction, shortBreakState);
+    idleState->addTransition(this, &StateMachine::longBreakAction, longBreakState);
 
     workState->setObjectName("WorkState");
-    workState->addTransition(appIcon->stopAction(), &QAction::triggered, idleState);
-    workState->addTransition(appIcon, &Application::timeout, idleState);
-    workState->addTransition(appIcon->shortBreakAction(), &QAction::triggered, shortBreakState);
-    workState->addTransition(appIcon->longBreakAction(), &QAction::triggered, longBreakState);
+    workState->addTransition(this, &StateMachine::stopAction, idleState);
+    workState->addTransition(this, &StateMachine::timeoutAction, idleState);
+    workState->addTransition(this, &StateMachine::shortBreakAction, shortBreakState);
+    workState->addTransition(this, &StateMachine::longBreakAction, longBreakState);
 
     shortBreakState->setObjectName("ShortBreakState");
-    shortBreakState->addTransition(appIcon->stopAction(), &QAction::triggered, idleState);
-    shortBreakState->addTransition(appIcon, &Application::timeout, idleState);
-    shortBreakState->addTransition(appIcon->workAction(), &QAction::triggered, workState);
-    shortBreakState->addTransition(appIcon->longBreakAction(), &QAction::triggered, longBreakState);
+    shortBreakState->addTransition(this, &StateMachine::stopAction, idleState);
+    shortBreakState->addTransition(this, &StateMachine::timeoutAction, idleState);
+    shortBreakState->addTransition(this, &StateMachine::workAction, workState);
+    shortBreakState->addTransition(this, &StateMachine::longBreakAction, longBreakState);
 
     longBreakState->setObjectName("LongBreakState");
-    longBreakState->addTransition(appIcon->stopAction(), &QAction::triggered, idleState);
-    longBreakState->addTransition(appIcon, &Application::timeout, idleState);
-    longBreakState->addTransition(appIcon->workAction(), &QAction::triggered, workState);
-    longBreakState->addTransition(appIcon->shortBreakAction(), &QAction::triggered,
-                                  shortBreakState);
+    longBreakState->addTransition(this, &StateMachine::stopAction, idleState);
+    longBreakState->addTransition(this, &StateMachine::timeoutAction, idleState);
+    longBreakState->addTransition(this, &StateMachine::workAction, workState);
+    longBreakState->addTransition(this, &StateMachine::shortBreakAction, shortBreakState);
 }
 
 bool StateMachine::isEmpty()

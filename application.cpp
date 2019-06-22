@@ -68,17 +68,15 @@ Application::Application(QObject *parent)
     connect(stateMachine, &StateMachine::longBreakStateExited, this,
             &Application::onLongBreakStateExited);
 
-    stateMachine->setupTransitions(this);
-    stateMachine->start();
+    startStateMachine();
 }
 
 void Application::setupActions()
 {
-    _workAction = new QAction(QIcon(":/icons/icon_tomato_blue.png"), tr("Work"), this);
-    _stopAction = new QAction(QIcon(":/icons/stop.svg"), tr("Stop"), this);
-    _shortBreakAction =
-            new QAction(QIcon(":/icons/icon_tomato_green.png"), tr("Short break"), this);
-    _longBreakAction = new QAction(QIcon(":/icons/icon_tomato_yellow.png"), tr("Long break"), this);
+    workAction = new QAction(QIcon(":/icons/icon_tomato_blue.png"), tr("Work"), this);
+    stopAction = new QAction(QIcon(":/icons/stop.svg"), tr("Stop"), this);
+    shortBreakAction = new QAction(QIcon(":/icons/icon_tomato_green.png"), tr("Short break"), this);
+    longBreakAction = new QAction(QIcon(":/icons/icon_tomato_yellow.png"), tr("Long break"), this);
     timerAction = new QAction(QIcon(":/icons/clock.svg"), getTimeString(0, 0), this);
     workPeriodsCountAction = new QAction(tr("No work periods"), this);
     resetWorkPeriodsAction = new QAction(tr("Reset count"), this);
@@ -91,7 +89,7 @@ void Application::setupActions()
 
     timerAction->setEnabled(false);
     workPeriodsCountAction->setEnabled(false);
-    _stopAction->setEnabled(false);
+    stopAction->setEnabled(false);
     resetWorkPeriodsAction->setEnabled(false);
 }
 
@@ -103,14 +101,14 @@ void Application::setupContextMenu()
 
     QMenu *contextMenu = new QMenu();
     contextMenu->addAction(timerAction);
-    contextMenu->addAction(_stopAction);
+    contextMenu->addAction(stopAction);
     contextMenu->addSeparator();
     contextMenu->addAction(workPeriodsCountAction);
     contextMenu->addAction(resetWorkPeriodsAction);
     contextMenu->addSeparator();
-    contextMenu->addAction(_workAction);
-    contextMenu->addAction(_shortBreakAction);
-    contextMenu->addAction(_longBreakAction);
+    contextMenu->addAction(workAction);
+    contextMenu->addAction(shortBreakAction);
+    contextMenu->addAction(longBreakAction);
     contextMenu->addSeparator();
     contextMenu->addAction(aboutAction);
     contextMenu->addAction(preferencesAction);
@@ -118,6 +116,19 @@ void Application::setupContextMenu()
     contextMenu->addAction(quit);
 
     trayIcon->setContextMenu(contextMenu);
+}
+
+void Application::startStateMachine()
+{
+    stateMachine->setupTransitions();
+
+    connect(workAction, &QAction::triggered, stateMachine, &StateMachine::workAction);
+    connect(stopAction, &QAction::triggered, stateMachine, &StateMachine::stopAction);
+    connect(shortBreakAction, &QAction::triggered, stateMachine, &StateMachine::shortBreakAction);
+    connect(longBreakAction, &QAction::triggered, stateMachine, &StateMachine::longBreakAction);
+    connect(this, &Application::timeout, stateMachine, &StateMachine::timeoutAction);
+
+    stateMachine->start();
 }
 
 void Application::show()
@@ -132,7 +143,7 @@ void Application::onIdleStateEntered()
     trayIcon->setIcon(idleIcon);
     currentTimeInSeconds = 0;
     timer->stop();
-    _stopAction->setEnabled(false);
+    stopAction->setEnabled(false);
 
     timerAction->setText(getTimeString(0, 0));
 }
@@ -163,7 +174,7 @@ void Application::playBreakTickTockSound()
 
 void Application::onWorkStateEntered()
 {
-    trayIcon->setIcon(_workAction->icon());
+    trayIcon->setIcon(workAction->icon());
     stateChanged();
 
     playTimerStartSound();
@@ -173,7 +184,7 @@ void Application::onWorkStateEntered()
 
 void Application::onShortBreakStateEntered()
 {
-    trayIcon->setIcon(_shortBreakAction->icon());
+    trayIcon->setIcon(shortBreakAction->icon());
     stateChanged();
 
     playTimerStartSound();
@@ -183,7 +194,7 @@ void Application::onShortBreakStateEntered()
 
 void Application::onLongBreakStateEntered()
 {
-    trayIcon->setIcon(_longBreakAction->icon());
+    trayIcon->setIcon(longBreakAction->icon());
     stateChanged();
 
     playTimerStartSound();
@@ -217,7 +228,7 @@ void Application::stateChanged()
 {
     currentTimeInSeconds = 0;
     timer->start(1000);
-    _stopAction->setEnabled(true);
+    stopAction->setEnabled(true);
 }
 
 void Application::onResetCount()

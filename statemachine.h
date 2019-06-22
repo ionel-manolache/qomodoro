@@ -16,7 +16,7 @@ public:
     void start();
     void stop();
 
-    void setupTransitions(Application *app);
+    void setupTransitions();
 
     bool isEmpty();
 
@@ -32,6 +32,12 @@ signals:
     void workStateExited();
     void shortBreakStateExited();
     void longBreakStateExited();
+
+    void workAction();
+    void stopAction();
+    void shortBreakAction();
+    void longBreakAction();
+    void timeoutAction();
 
 private:
     QStateMachine *machine;
