@@ -5,12 +5,11 @@
 #include <QSystemTrayIcon>
 #include <QMediaPlayer>
 
-class QStateMachine;
-class QState;
 class QTimer;
 class QAction;
 class Settings;
 class PreferencesDialog;
+class StateMachine;
 
 class Application : public QObject
 {
@@ -21,6 +20,12 @@ public:
     void show();
 
     enum Period { IDLE = 0, WORK, SHORT_BREAK, LONG_BREAK };
+
+    QAction *workAction() { return _workAction; }
+    QAction *stopAction() { return _stopAction; }
+    QAction *shortBreakAction() { return _shortBreakAction; }
+    QAction *longBreakAction() { return _longBreakAction; }
+
 signals:
     void timeout();
 
@@ -63,28 +68,23 @@ private:
     QSystemTrayIcon *trayIcon;
     QTimer *timer;
 
-    QAction *workAction;
-    QAction *stopAction;
-    QAction *shortBreakAction;
-    QAction *longBreakAction;
+    QAction *_workAction;
+    QAction *_stopAction;
+    QAction *_shortBreakAction;
+    QAction *_longBreakAction;
     QAction *timerAction;
     QAction *workPeriodsCountAction;
     QAction *resetWorkPeriodsAction;
     QAction *aboutAction;
     QAction *preferencesAction;
 
-    QStateMachine *machine;
-    QState *idleState;
-    QState *workState;
-    QState *shortBreakState;
-    QState *longBreakState;
-    QState *currentState;
-
     PreferencesDialog *prefDialog;
 
     Settings *settings;
 
     QIcon idleIcon;
+
+    StateMachine *stateMachine;
 
     QMediaPlayer *playStart;
     QMediaPlayer *playEnd;

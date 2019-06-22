@@ -14,12 +14,14 @@ SOURCES += \
     main.cpp \
     preferencesdialog.cpp \
     settings.cpp \
-    application.cpp
+    application.cpp \
+    statemachine.cpp
 
 HEADERS += \
     preferencesdialog.h \
     settings.h \
-    application.h
+    application.h \
+    statemachine.h
 
 FORMS += \
     preferencesdialog.ui

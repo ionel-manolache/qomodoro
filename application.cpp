@@ -5,7 +5,6 @@
 #include <QPainter>
 #include <QTimer>
 #include <QMessageBox>
-#include <QStateMachine>
 
 #include <QMediaPlayer>
 
@@ -13,6 +12,7 @@
 
 #include "settings.h"
 #include "preferencesdialog.h"
+#include "statemachine.h"
 
 #include <QDebug>
 
@@ -31,12 +31,8 @@ Application::Application()
       workPeriods(0),
       trayIcon(new QSystemTrayIcon(this)),
       timer(new QTimer(this)),
-      machine(new QStateMachine(this)),
-      idleState(new QState()),
-      workState(new QState()),
-      shortBreakState(new QState()),
-      longBreakState(new QState()),
-      prefDialog(new PreferencesDialog)
+      prefDialog(new PreferencesDialog),
+      stateMachine(new StateMachine(this))
 {
     settings = new Settings(this);
 
@@ -73,10 +69,11 @@ Application::Application()
     QAction *quit = new QAction(tr("Quit"), this);
     quit->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q));
 
-    workAction = new QAction(QIcon(":/icons/icon_tomato_blue.png"), tr("Work"), this);
-    stopAction = new QAction(QIcon(":/icons/stop.svg"), tr("Stop"), this);
-    shortBreakAction = new QAction(QIcon(":/icons/icon_tomato_green.png"), tr("Short break"), this);
-    longBreakAction = new QAction(QIcon(":/icons/icon_tomato_yellow.png"), tr("Long break"), this);
+    _workAction = new QAction(QIcon(":/icons/icon_tomato_blue.png"), tr("Work"), this);
+    _stopAction = new QAction(QIcon(":/icons/stop.svg"), tr("Stop"), this);
+    _shortBreakAction =
+            new QAction(QIcon(":/icons/icon_tomato_green.png"), tr("Short break"), this);
+    _longBreakAction = new QAction(QIcon(":/icons/icon_tomato_yellow.png"), tr("Long break"), this);
     timerAction = new QAction(QIcon(":/icons/clock.svg"), getTimeString(0, 0), this);
     workPeriodsCountAction = new QAction(tr("No work periods"), this);
     resetWorkPeriodsAction = new QAction(tr("Reset count"), this);
@@ -92,19 +89,19 @@ Application::Application()
 
     timerAction->setEnabled(false);
     workPeriodsCountAction->setEnabled(false);
-    stopAction->setEnabled(false);
+    _stopAction->setEnabled(false);
     resetWorkPeriodsAction->setEnabled(false);
 
     connect(quit, &QAction::triggered, qApp, &QApplication::quit);
     contextMenu->addAction(timerAction);
-    contextMenu->addAction(stopAction);
+    contextMenu->addAction(_stopAction);
     contextMenu->addSeparator();
     contextMenu->addAction(workPeriodsCountAction);
     contextMenu->addAction(resetWorkPeriodsAction);
     contextMenu->addSeparator();
-    contextMenu->addAction(workAction);
-    contextMenu->addAction(shortBreakAction);
-    contextMenu->addAction(longBreakAction);
+    contextMenu->addAction(_workAction);
+    contextMenu->addAction(_shortBreakAction);
+    contextMenu->addAction(_longBreakAction);
     contextMenu->addSeparator();
     contextMenu->addAction(aboutAction);
     contextMenu->addAction(preferencesAction);
@@ -113,44 +110,21 @@ Application::Application()
 
     trayIcon->setContextMenu(contextMenu);
 
-    connect(idleState, &QState::entered, this, &Application::onIdleStateEntered);
-    connect(workState, &QState::entered, this, &Application::onWorkStateEntered);
-    connect(shortBreakState, &QState::entered, this, &Application::onShortBreakStateEntered);
-    connect(longBreakState, &QState::entered, this, &Application::onLongBreakStateEntered);
+    connect(stateMachine, &StateMachine::idleStateIn, this, &Application::onIdleStateEntered);
+    connect(stateMachine, &StateMachine::workStateIn, this, &Application::onWorkStateEntered);
+    connect(stateMachine, &StateMachine::shortBreakStateIn, this,
+            &Application::onShortBreakStateEntered);
+    connect(stateMachine, &StateMachine::longBreakStateIn, this,
+            &Application::onLongBreakStateEntered);
 
-    connect(workState, &QState::exited, this, &Application::onWorkStateExited);
-    connect(shortBreakState, &QState::exited, this, &Application::onShortBreakStateExited);
-    connect(longBreakState, &QState::exited, this, &Application::onLongBreakStateExited);
+    connect(stateMachine, &StateMachine::workStateOut, this, &Application::onWorkStateExited);
+    connect(stateMachine, &StateMachine::shortBreakStateOut, this,
+            &Application::onShortBreakStateExited);
+    connect(stateMachine, &StateMachine::longBreakStateOut, this,
+            &Application::onLongBreakStateExited);
 
-    idleState->setObjectName("IdleState");
-    idleState->addTransition(workAction, &QAction::triggered, workState);
-    idleState->addTransition(shortBreakAction, &QAction::triggered, shortBreakState);
-    idleState->addTransition(longBreakAction, &QAction::triggered, longBreakState);
-
-    workState->setObjectName("WorkState");
-    workState->addTransition(stopAction, &QAction::triggered, idleState);
-    workState->addTransition(this, &Application::timeout, idleState);
-    workState->addTransition(shortBreakAction, &QAction::triggered, shortBreakState);
-    workState->addTransition(longBreakAction, &QAction::triggered, longBreakState);
-
-    shortBreakState->setObjectName("ShortBreakState");
-    shortBreakState->addTransition(stopAction, &QAction::triggered, idleState);
-    shortBreakState->addTransition(this, &Application::timeout, idleState);
-    shortBreakState->addTransition(workAction, &QAction::triggered, workState);
-    shortBreakState->addTransition(longBreakAction, &QAction::triggered, longBreakState);
-
-    longBreakState->setObjectName("LongBreakState");
-    longBreakState->addTransition(stopAction, &QAction::triggered, idleState);
-    longBreakState->addTransition(this, &Application::timeout, idleState);
-    longBreakState->addTransition(workAction, &QAction::triggered, workState);
-    longBreakState->addTransition(shortBreakAction, &QAction::triggered, shortBreakState);
-
-    machine->addState(idleState);
-    machine->addState(workState);
-    machine->addState(shortBreakState);
-    machine->addState(longBreakState);
-    machine->setInitialState(idleState);
-    machine->start();
+    stateMachine->setUpActions();
+    stateMachine->start();
 }
 
 void Application::show()
@@ -166,7 +140,7 @@ void Application::onIdleStateEntered()
     trayIcon->setIcon(idleIcon);
     currentTimeInSeconds = 0;
     timer->stop();
-    stopAction->setEnabled(false);
+    _stopAction->setEnabled(false);
 
     timerAction->setText(getTimeString(0, 0));
 }
@@ -205,7 +179,7 @@ void Application::onWorkStateEntered()
 {
     playTimerStartSound();
 
-    stateChanged(workAction->icon());
+    stateChanged(_workAction->icon());
 
     playTickTockSound(true);
 }
@@ -214,7 +188,7 @@ void Application::onShortBreakStateEntered()
 {
     playTimerStartSound();
 
-    stateChanged(shortBreakAction->icon());
+    stateChanged(_shortBreakAction->icon());
 
     playTickTockSound(false);
 }
@@ -223,7 +197,7 @@ void Application::onLongBreakStateEntered()
 {
     playTimerStartSound();
 
-    stateChanged(longBreakAction->icon());
+    stateChanged(_longBreakAction->icon());
 
     playTickTockSound(false);
 }
@@ -255,7 +229,7 @@ void Application::stateChanged(QIcon icon)
     trayIcon->setIcon(icon);
     currentTimeInSeconds = 0;
     timer->start(1000);
-    stopAction->setEnabled(true);
+    _stopAction->setEnabled(true);
 }
 
 void Application::onMediaPlayerError(QMediaPlayer::Error error)
@@ -318,21 +292,18 @@ void Application::onPreferencesSaved()
 
 void Application::onTimerTimeout()
 {
-    if (machine->configuration().size() == 0) {
+    if (stateMachine->isEmpty())
         return;
-    }
 
     ++currentTimeInSeconds;
 
     int timeInSeconds = 0;
-    QAbstractState *state = machine->configuration().toList().first();
-    if (state == workState) {
+    if (stateMachine->isWorkState())
         timeInSeconds = workTimeInSeconds;
-    } else if (state == shortBreakState) {
+    else if (stateMachine->isShortBreakState())
         timeInSeconds = shortBreakInSeconds;
-    } else if (state == longBreakState) {
+    else if (stateMachine->isLongBreakState())
         timeInSeconds = longBreakInSeconds;
-    }
 
     if (timeInSeconds > 0) {
         if (currentTimeInSeconds >= timeInSeconds) {
