@@ -15,13 +15,15 @@ SOURCES += \
     preferencesdialog.cpp \
     settings.cpp \
     application.cpp \
-    statemachine.cpp
+    statemachine.cpp \
+    mediaplayer.cpp
 
 HEADERS += \
     preferencesdialog.h \
     settings.h \
     application.h \
-    statemachine.h
+    statemachine.h \
+    mediaplayer.h
 
 FORMS += \
     preferencesdialog.ui

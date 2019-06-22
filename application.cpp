@@ -10,8 +10,9 @@
 
 #include <QFile>
 
-#include "settings.h"
+#include "mediaplayer.h"
 #include "preferencesdialog.h"
+#include "settings.h"
 #include "statemachine.h"
 
 #include <QDebug>
@@ -23,8 +24,9 @@ static QString getTimeString(int minutes, int seconds)
     return timeString.arg(minutes, 2, 10, QChar('0')).arg(seconds, 2, 10, QChar('0'));
 }
 
-Application::Application()
-    : workTimeInSeconds(0),
+Application::Application(QObject *parent)
+    : QObject(parent),
+      workTimeInSeconds(0),
       shortBreakInSeconds(0),
       longBreakInSeconds(0),
       currentTimeInSeconds(0),
@@ -32,29 +34,10 @@ Application::Application()
       trayIcon(new QSystemTrayIcon(this)),
       timer(new QTimer(this)),
       prefDialog(new PreferencesDialog),
-      stateMachine(new StateMachine(this))
+      stateMachine(new StateMachine(this)),
+      mediaPlayer(new MediaPlayer(this))
 {
     settings = new Settings(this);
-
-    playStart = new QMediaPlayer(this);
-    playStart->setVolume(90);
-    playStart->setMedia(QUrl("qrc:/sounds/timer_start.mp3"));
-    connect(playStart,
-            static_cast<void (QMediaPlayer::*)(QMediaPlayer::Error)>(&QMediaPlayer::error), this,
-            &Application::onMediaPlayerError);
-
-    playEnd = new QMediaPlayer(this);
-    playEnd->setVolume(90);
-    playEnd->setMedia(QUrl("qrc:/sounds/timer_end.mp3"));
-    connect(playEnd, static_cast<void (QMediaPlayer::*)(QMediaPlayer::Error)>(&QMediaPlayer::error),
-            this, &Application::onMediaPlayerError);
-
-    playTickTock = new QMediaPlayer(this);
-    playTickTock->setVolume(90);
-    playTickTock->setMedia(QUrl("qrc:/sounds/timer_tick.mp3"));
-    connect(playTickTock,
-            static_cast<void (QMediaPlayer::*)(QMediaPlayer::Error)>(&QMediaPlayer::error), this,
-            &Application::onMediaPlayerError);
 
     workTimeInSeconds = settings->workTime() * 60;
     shortBreakInSeconds = settings->shortBreakTime() * 60;
@@ -134,8 +117,7 @@ void Application::show()
 
 void Application::onIdleStateEntered()
 {
-    playStart->stop();
-    playTickTock->stop();
+    mediaPlayer->stop();
 
     trayIcon->setIcon(idleIcon);
     currentTimeInSeconds = 0;
@@ -147,32 +129,23 @@ void Application::onIdleStateEntered()
 
 void Application::playTimerStartSound()
 {
-    if (playStart->state() == QMediaPlayer::PlayingState)
-        playStart->stop();
-
     if (settings->soundOnTimerStart())
-        playStart->play();
+        mediaPlayer->playStart();
 }
 
 void Application::playTimerEndSound()
 {
-    if (playEnd->state() == QMediaPlayer::PlayingState)
-        playEnd->stop();
-
     if (settings->soundOnTimerEnd())
-        playEnd->play();
+        mediaPlayer->playEnd();
 }
 
 void Application::playTickTockSound(bool work)
 {
-    if (playTickTock->state() == QMediaPlayer::PlayingState)
-        playTickTock->stop();
-
     if (work && settings->tickTockDuringWork())
-        playTickTock->play();
+        mediaPlayer->playTickTock();
 
     if (!work && settings->tickTockDuringBreak())
-        playTickTock->play();
+        mediaPlayer->playTickTock();
 }
 
 void Application::onWorkStateEntered()
@@ -230,37 +203,6 @@ void Application::stateChanged(QIcon icon)
     currentTimeInSeconds = 0;
     timer->start(1000);
     _stopAction->setEnabled(true);
-}
-
-void Application::onMediaPlayerError(QMediaPlayer::Error error)
-{
-    QMediaPlayer *player = qobject_cast<QMediaPlayer *>(QObject::sender());
-    qDebug() << player->currentMedia().canonicalUrl().toString();
-
-    qDebug() << "Application::onMediaPlayerError(...) : ";
-    switch (error) {
-    case QMediaPlayer::NoError:
-        qDebug() << "No error";
-        break;
-    case QMediaPlayer::ResourceError:
-        qDebug() << "Resource Error";
-        break;
-    case QMediaPlayer::FormatError:
-        qDebug() << "Format Error";
-        break;
-    case QMediaPlayer::NetworkError:
-        qDebug() << "Network Error";
-        break;
-    case QMediaPlayer::AccessDeniedError:
-        qDebug() << "AccessDenied Error";
-        break;
-    case QMediaPlayer::ServiceMissingError:
-        qDebug() << "ServiceMissing Error";
-        break;
-    case QMediaPlayer::MediaIsPlaylist:
-        qDebug() << "MediaIsPlaylist Error";
-        break;
-    }
 }
 
 void Application::onResetCount()

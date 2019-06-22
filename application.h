@@ -7,15 +7,17 @@
 
 class QTimer;
 class QAction;
+
 class Settings;
 class PreferencesDialog;
 class StateMachine;
+class MediaPlayer;
 
 class Application : public QObject
 {
     Q_OBJECT
 public:
-    Application();
+    explicit Application(QObject *parent = nullptr);
 
     void show();
 
@@ -43,8 +45,6 @@ private slots:
     void onWorkStateExited();
     void onShortBreakStateExited();
     void onLongBreakStateExited();
-
-    void onMediaPlayerError(QMediaPlayer::Error error);
 
 private:
     void loadSettings();
@@ -86,9 +86,7 @@ private:
 
     StateMachine *stateMachine;
 
-    QMediaPlayer *playStart;
-    QMediaPlayer *playEnd;
-    QMediaPlayer *playTickTock;
+    MediaPlayer *mediaPlayer;
 };
 
 #endif // SYSTRAYICON_H
