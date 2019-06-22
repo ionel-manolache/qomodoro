@@ -47,14 +47,18 @@ private slots:
     void onLongBreakStateExited();
 
 private:
+    void setupActions();
+    void setupContextMenu();
+
     void loadSettings();
     void saveSettings();
 
-    void stateChanged(QIcon icon);
+    void stateChanged();
 
     void playTimerStartSound();
     void playTimerEndSound();
-    void playTickTockSound(bool work = false);
+    void playWorkTickTockSound();
+    void playBreakTickTockSound();
 
 private:
     int workTimeInSeconds;

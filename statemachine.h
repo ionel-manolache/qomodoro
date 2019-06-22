@@ -25,13 +25,13 @@ public:
     bool isLongBreakState();
 
 signals:
-    void idleStateIn();
-    void workStateIn();
-    void shortBreakStateIn();
-    void longBreakStateIn();
-    void workStateOut();
-    void shortBreakStateOut();
-    void longBreakStateOut();
+    void idleStateEntered();
+    void workStateEntered();
+    void shortBreakStateEntered();
+    void longBreakStateEntered();
+    void workStateExited();
+    void shortBreakStateExited();
+    void longBreakStateExited();
 
 private:
     Application *appIcon;

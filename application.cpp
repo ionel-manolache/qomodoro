@@ -45,13 +45,35 @@ Application::Application(QObject *parent)
 
     connect(timer, &QTimer::timeout, this, &Application::onTimerTimeout);
 
+    prefDialog->setSettings(settings);
+    connect(prefDialog, &PreferencesDialog::accepted, this, &Application::onPreferencesSaved);
+
     idleIcon = QIcon(":/icons/icon_tomato_red.png");
     trayIcon->setIcon(idleIcon);
 
-    QMenu *contextMenu = new QMenu();
-    QAction *quit = new QAction(tr("Quit"), this);
-    quit->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q));
+    setupActions();
 
+    setupContextMenu();
+
+    connect(stateMachine, &StateMachine::idleStateEntered, this, &Application::onIdleStateEntered);
+    connect(stateMachine, &StateMachine::workStateEntered, this, &Application::onWorkStateEntered);
+    connect(stateMachine, &StateMachine::shortBreakStateEntered, this,
+            &Application::onShortBreakStateEntered);
+    connect(stateMachine, &StateMachine::longBreakStateEntered, this,
+            &Application::onLongBreakStateEntered);
+
+    connect(stateMachine, &StateMachine::workStateExited, this, &Application::onWorkStateExited);
+    connect(stateMachine, &StateMachine::shortBreakStateExited, this,
+            &Application::onShortBreakStateExited);
+    connect(stateMachine, &StateMachine::longBreakStateExited, this,
+            &Application::onLongBreakStateExited);
+
+    stateMachine->setUpActions();
+    stateMachine->start();
+}
+
+void Application::setupActions()
+{
     _workAction = new QAction(QIcon(":/icons/icon_tomato_blue.png"), tr("Work"), this);
     _stopAction = new QAction(QIcon(":/icons/stop.svg"), tr("Stop"), this);
     _shortBreakAction =
@@ -67,15 +89,19 @@ Application::Application(QObject *parent)
     connect(aboutAction, &QAction::triggered, this, &Application::onAbout);
     connect(preferencesAction, &QAction::triggered, this, &Application::onPreferences);
 
-    prefDialog->setSettings(settings);
-    connect(prefDialog, &PreferencesDialog::accepted, this, &Application::onPreferencesSaved);
-
     timerAction->setEnabled(false);
     workPeriodsCountAction->setEnabled(false);
     _stopAction->setEnabled(false);
     resetWorkPeriodsAction->setEnabled(false);
+}
 
+void Application::setupContextMenu()
+{
+    QAction *quit = new QAction(tr("Quit"), this);
+    quit->setShortcut(QKeySequence(Qt::CTRL + Qt::Key_Q));
     connect(quit, &QAction::triggered, qApp, &QApplication::quit);
+
+    QMenu *contextMenu = new QMenu();
     contextMenu->addAction(timerAction);
     contextMenu->addAction(_stopAction);
     contextMenu->addSeparator();
@@ -92,22 +118,6 @@ Application::Application(QObject *parent)
     contextMenu->addAction(quit);
 
     trayIcon->setContextMenu(contextMenu);
-
-    connect(stateMachine, &StateMachine::idleStateIn, this, &Application::onIdleStateEntered);
-    connect(stateMachine, &StateMachine::workStateIn, this, &Application::onWorkStateEntered);
-    connect(stateMachine, &StateMachine::shortBreakStateIn, this,
-            &Application::onShortBreakStateEntered);
-    connect(stateMachine, &StateMachine::longBreakStateIn, this,
-            &Application::onLongBreakStateEntered);
-
-    connect(stateMachine, &StateMachine::workStateOut, this, &Application::onWorkStateExited);
-    connect(stateMachine, &StateMachine::shortBreakStateOut, this,
-            &Application::onShortBreakStateExited);
-    connect(stateMachine, &StateMachine::longBreakStateOut, this,
-            &Application::onLongBreakStateExited);
-
-    stateMachine->setUpActions();
-    stateMachine->start();
 }
 
 void Application::show()
@@ -139,40 +149,46 @@ void Application::playTimerEndSound()
         mediaPlayer->playEnd();
 }
 
-void Application::playTickTockSound(bool work)
+void Application::playWorkTickTockSound()
 {
-    if (work && settings->tickTockDuringWork())
+    if (settings->tickTockDuringWork())
         mediaPlayer->playTickTock();
+}
 
-    if (!work && settings->tickTockDuringBreak())
+void Application::playBreakTickTockSound()
+{
+    if (settings->tickTockDuringBreak())
         mediaPlayer->playTickTock();
 }
 
 void Application::onWorkStateEntered()
 {
+    trayIcon->setIcon(_workAction->icon());
+    stateChanged();
+
     playTimerStartSound();
 
-    stateChanged(_workAction->icon());
-
-    playTickTockSound(true);
+    playWorkTickTockSound();
 }
 
 void Application::onShortBreakStateEntered()
 {
+    trayIcon->setIcon(_shortBreakAction->icon());
+    stateChanged();
+
     playTimerStartSound();
 
-    stateChanged(_shortBreakAction->icon());
-
-    playTickTockSound(false);
+    playBreakTickTockSound();
 }
 
 void Application::onLongBreakStateEntered()
 {
+    trayIcon->setIcon(_longBreakAction->icon());
+    stateChanged();
+
     playTimerStartSound();
 
-    stateChanged(_longBreakAction->icon());
-
-    playTickTockSound(false);
+    playBreakTickTockSound();
 }
 
 void Application::onWorkStateExited()
@@ -197,9 +213,8 @@ void Application::onLongBreakStateExited()
         playTimerEndSound();
 }
 
-void Application::stateChanged(QIcon icon)
+void Application::stateChanged()
 {
-    trayIcon->setIcon(icon);
     currentTimeInSeconds = 0;
     timer->start(1000);
     _stopAction->setEnabled(true);

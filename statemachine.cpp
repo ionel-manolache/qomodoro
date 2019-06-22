@@ -12,14 +12,14 @@ StateMachine::StateMachine(Application *app)
       shortBreakState(new QState()),
       longBreakState(new QState())
 {
-    connect(idleState, &QState::entered, this, &StateMachine::idleStateIn);
-    connect(workState, &QState::entered, this, &StateMachine::workStateIn);
-    connect(shortBreakState, &QState::entered, this, &StateMachine::shortBreakStateIn);
-    connect(longBreakState, &QState::entered, this, &StateMachine::longBreakStateIn);
+    connect(idleState, &QState::entered, this, &StateMachine::idleStateEntered);
+    connect(workState, &QState::entered, this, &StateMachine::workStateEntered);
+    connect(shortBreakState, &QState::entered, this, &StateMachine::shortBreakStateEntered);
+    connect(longBreakState, &QState::entered, this, &StateMachine::longBreakStateEntered);
 
-    connect(workState, &QState::exited, this, &StateMachine::workStateOut);
-    connect(shortBreakState, &QState::exited, this, &StateMachine::shortBreakStateOut);
-    connect(longBreakState, &QState::exited, this, &StateMachine::longBreakStateOut);
+    connect(workState, &QState::exited, this, &StateMachine::workStateExited);
+    connect(shortBreakState, &QState::exited, this, &StateMachine::shortBreakStateExited);
+    connect(longBreakState, &QState::exited, this, &StateMachine::longBreakStateExited);
 
     machine->addState(idleState);
     machine->addState(workState);
