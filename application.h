@@ -45,6 +45,7 @@ private:
     void setupActions();
     void setupContextMenu();
 
+    void setupStateMachine();
     void startStateMachine();
 
     void loadSettings();
@@ -58,36 +59,35 @@ private:
     void playBreakTickTockSound();
 
 private:
-    int workTimeInSeconds;
-    int shortBreakInSeconds;
-    int longBreakInSeconds;
-    Period currentPeriod;
-    int currentTimeInSeconds;
+    int m_workTimeInSeconds;
+    int m_shortBreakInSeconds;
+    int m_longBreakInSeconds;
+    int m_currentTimeInSeconds;
 
-    int workPeriods;
+    int m_workPeriods;
 
-    QSystemTrayIcon *trayIcon;
-    QTimer *timer;
+    QSystemTrayIcon *m_trayIcon;
+    QTimer *m_timer;
 
-    QAction *workAction;
-    QAction *stopAction;
-    QAction *shortBreakAction;
-    QAction *longBreakAction;
-    QAction *timerAction;
-    QAction *workPeriodsCountAction;
-    QAction *resetWorkPeriodsAction;
-    QAction *aboutAction;
-    QAction *preferencesAction;
+    QAction *m_workAction;
+    QAction *m_stopAction;
+    QAction *m_shortBreakAction;
+    QAction *m_longBreakAction;
+    QAction *m_timerAction;
+    QAction *m_workPeriodsCountAction;
+    QAction *m_resetWorkPeriodsAction;
+    QAction *m_aboutAction;
+    QAction *m_preferencesAction;
 
-    PreferencesDialog *prefDialog;
+    PreferencesDialog *m_prefDialog;
 
-    Settings *settings;
+    Settings *m_settings;
 
-    QIcon idleIcon;
+    QIcon m_idleIcon;
 
-    StateMachine *stateMachine;
+    StateMachine *m_stateMachine;
 
-    MediaPlayer *mediaPlayer;
+    MediaPlayer *m_mediaPlayer;
 };
 
 #endif // SYSTRAYICON_H
