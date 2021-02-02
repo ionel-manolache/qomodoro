@@ -4,6 +4,7 @@
 #include <QObject>
 
 #include <QMediaPlayer>
+#include <QMediaPlaylist>
 
 class MediaPlayer : public QObject
 {
@@ -24,6 +25,8 @@ private:
     QMediaPlayer *m_playStart;
     QMediaPlayer *m_playEnd;
     QMediaPlayer *m_playTickTock;
+
+    QMediaPlaylist *m_tickTockPlaylist;
 };
 
 #endif // MEDIAPLAYER_H

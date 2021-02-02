@@ -19,8 +19,13 @@ MediaPlayer::MediaPlayer(QObject *parent) : QObject(parent)
             &MediaPlayer::onMediaPlayerError);
 
     m_playTickTock = new QMediaPlayer(this);
-    m_playTickTock->setVolume(90);
-    m_playTickTock->setMedia(QUrl("qrc:/sounds/timer_tick.mp3"));
+    m_playTickTock->setVolume(30);
+
+    m_tickTockPlaylist = new QMediaPlaylist(this);
+    m_tickTockPlaylist->addMedia(QUrl("qrc:/sounds/timer_tick.mp3"));
+    m_tickTockPlaylist->setPlaybackMode(QMediaPlaylist::Loop);
+
+    m_playTickTock->setPlaylist(m_tickTockPlaylist);
     connect(m_playTickTock,
             static_cast<void (QMediaPlayer::*)(QMediaPlayer::Error)>(&QMediaPlayer::error), this,
             &MediaPlayer::onMediaPlayerError);
